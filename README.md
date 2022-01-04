@@ -15,7 +15,7 @@ Then
 
 `library(devtools)`
 
-` install_github("blueOwl/AnnoQR")`
+` install_github("USCbiostats/AnnoQR")`
 
 ## Function list
 
