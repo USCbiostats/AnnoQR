@@ -1,4 +1,4 @@
-# AnnoQR: R clinet for AnnoQ Variant Query
+# AnnoQR: R client for AnnoQ Variant Query
 
 ## Introdcution
 
