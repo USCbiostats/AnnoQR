@@ -2,7 +2,7 @@
 #'
 NULL
 
-host = 'http://annoq.org:3404'
+host = 'http://bioghost2.usc.edu:3403'
 
 #' init_query_js_body
 #'
@@ -153,7 +153,7 @@ query_obj_to_json <- function(q){
 #'
 #' @export
 perform_search <- function(q) {
-  r <- POST(paste0(host, "/vs-index/_search"), content_type_json(), body = query_obj_to_json(q))
+  r <- POST(paste0(host, "/annoq-test/_search"), content_type_json(), body = query_obj_to_json(q))
   stop_for_status(r)
   content(r, "parsed", "application/json")
 }
@@ -209,7 +209,7 @@ keywordsQuery <- function(keywords){
   }}'
   body = parse_json(body)
   body[['query']][['multi_match']][['query']] = keywords
-  r <- POST(paste0(host, "/vs-index/_search"), content_type_json(), body = toJSON(body, auto_unbox = T))
+  r <- POST(paste0(host, "/annoq-test/_search"), content_type_json(), body = toJSON(body, auto_unbox = T))
   stop_for_status(r)
   content(r, "parsed", "application/json")
 }
