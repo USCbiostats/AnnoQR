@@ -4,6 +4,15 @@ NULL
 
 host = 'http://bioghost2.usc.edu:3403'
 
+# New function to perform a count query
+perform_count <- function(q) {
+  r <- POST(paste0(host, "/annoq-test/_count"), content_type_json(), body = query_obj_to_json(q))
+  stop_for_status(r)
+  count_response <- content(r, "parsed", "application/json")
+  return(count_response$count)
+}
+
+
 #' init_query_js_body
 #'
 #' This function init a empty query body is R list format
@@ -152,7 +161,12 @@ query_obj_to_json <- function(q){
 #' @return A list contain variants
 #'
 #' @export
+#' 
+# Modified perform_search function to use the count
+
 perform_search <- function(q) {
+  total_count <- perform_count(q)
+  q[['size']] <- total_count # Set the 'size' parameter
   r <- POST(paste0(host, "/annoq-test/_search"), content_type_json(), body = query_obj_to_json(q))
   stop_for_status(r)
   content(r, "parsed", "application/json")
@@ -171,7 +185,7 @@ perform_search <- function(q) {
 regionQuery <- function(contig, start, end, configFile = FALSE) {
   body = init_query_js_body()
   chr = term_filter('chr', contig)
-  pos = range_filter('pos', gt=start, lt=end)
+  pos = range_filter('pos', gt=start-1, lt=end+1)
   if (!isFALSE(configFile)) {
     body = add_source(body, read_config(configFile))
   }
