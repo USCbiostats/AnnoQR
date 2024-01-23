@@ -1,8 +1,7 @@
-#' @import jsonlite httr
-#'
-NULL
+library(httr)
+library(jsonlite)
 
-host = 'http://annoq.org:3403/'
+host = 'http://annoq.org:3403'
 
 # New function to perform a count query
 perform_count <- function(q) {
@@ -164,12 +163,61 @@ query_obj_to_json <- function(q){
 #' 
 # Modified perform_search function to use the count
 
-perform_search <- function(q) {
+perform_search_find_count <- function(q) {
+  # Get the total count of matching records
   total_count <- perform_count(q)
-  q[['size']] <- total_count # Set the 'size' parameter
-  r <- POST(paste0(host, "/annoq-test/_search"), content_type_json(), body = query_obj_to_json(q))
+  
+  # Modify the query to include the size parameter
+  q[['size']] <- total_count
+  
+  # Rest of the function to perform the search
+  request_body <- query_obj_to_json(q)
+  cat("Debug: Query JSON:\n", request_body, "\n")
+  
+  r <- POST(paste0(host, "/annoq-test/_search"), 
+            content_type_json(), 
+            body = request_body)
+  print(r)
+  
+  cat("We recommend you do pagination")
+  
+}
+
+perform_search_with_count <- function(q) {
+  # Get the total count of matching records
+  total_count <- perform_count(q)
+  
+  # Modify the query to include the size parameter
+  q[['size']] <- total_count
+  
+  # Rest of the function to perform the search
+  request_body <- query_obj_to_json(q)
+  r <- POST(paste0(host, "/annoq-test/_search"), 
+            content_type_json(), 
+            body = request_body)
   stop_for_status(r)
-  content(r, "parsed", "application/json")
+  response_content <- content(r, "text", encoding = "UTF-8")
+  return(fromJSON(response_content, flatten = TRUE))
+}
+
+
+perform_search <- function(q) {
+  # Convert the query object to JSON
+  request_body <- query_obj_to_json(q)
+  
+  # Send the request to the API
+  r <- POST(paste0(host, "/annoq-test/_search"), 
+            content_type_json(), 
+            body = request_body)
+  #print(r)
+  
+  # Check for HTTP errors
+  stop_for_status(r)
+  
+  # Parse and return the response content
+  response_content <- content(r, "text", encoding = "UTF-8")
+  parsed_content <- fromJSON(response_content, flatten = TRUE)
+  return(parsed_content)
 }
 
 #' regionQuery
@@ -191,7 +239,7 @@ regionQuery <- function(contig, start, end, configFile = FALSE) {
   }
   body = add_query_filter(body, chr)
   body = add_query_filter(body, pos)
-  perform_search(body)
+  perform_search_with_count(body)
 }
 
 #' rsidQuery
@@ -205,7 +253,7 @@ rsidQuery <- function(rsid){
   body = init_query_js_body()
   rs_filter = term_filter('rs_dbSNP151', rsid)
   body = add_query_filter(body, rs_filter)
-  perform_search(body)
+  perform_search_with_count(body)
 }
 
 
