@@ -2,7 +2,7 @@
 #'
 NULL
 
-host = 'http://bioghost2.usc.edu:3403'
+host = 'http://annoq.org:3403/'
 
 # New function to perform a count query
 perform_count <- function(q) {
