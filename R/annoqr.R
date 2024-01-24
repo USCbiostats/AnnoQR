@@ -1,7 +1,7 @@
 library(httr)
 library(jsonlite)
 
-host = 'http://annoq.org:3403'
+host = 'http://annoq.org/api'
 
 # New function to perform a count query
 perform_count <- function(q) {
