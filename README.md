@@ -173,7 +173,7 @@ This will generate:
 ```         
 Debug: Query JSON:
  {"query":{"bool":{"filter":[{"exists":{"field":"ANNOVAR_ensembl_Effect"}}]}},"size":40405505} 
-Response [http://annoq.org:3403/annoq-test/_search]
+Response [http://annoq.org/api/annoq-test/_search]
   Date: 
   Status: 400
   Content-Type: application/json;charset=utf-8
