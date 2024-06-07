@@ -5,7 +5,7 @@ host = 'http://annoq.org/api'
 
 # New function to perform a count query
 perform_count <- function(q) {
-  r <- POST(paste0(host, "/annoq-annotations-v2/_count"), content_type_json(), body = query_obj_to_json(q))
+  r <- POST(paste0(host, "/annoq-test/_count"), content_type_json(), body = query_obj_to_json(q))
   stop_for_status(r)
   count_response <- content(r, "parsed", "application/json")
   return(count_response$count)
@@ -174,7 +174,7 @@ perform_search_find_count <- function(q) {
   request_body <- query_obj_to_json(q)
   cat("Debug: Query JSON:\n", request_body, "\n")
   
-  r <- POST(paste0(host, "/annoq-annotations-v2/_search"), 
+  r <- POST(paste0(host, "/annoq-test/_search"), 
             content_type_json(), 
             body = request_body)
   print(r)
@@ -192,7 +192,7 @@ perform_search_with_count <- function(q) {
   
   # Rest of the function to perform the search
   request_body <- query_obj_to_json(q)
-  r <- POST(paste0(host, "/annoq-annotations-v2/_search"), 
+  r <- POST(paste0(host, "/annoq-test/_search"), 
             content_type_json(), 
             body = request_body)
   stop_for_status(r)
@@ -206,7 +206,7 @@ perform_search <- function(q) {
   request_body <- query_obj_to_json(q)
   
   # Send the request to the API
-  r <- POST(paste0(host, "/annoq-annotations-v2/_search"), 
+  r <- POST(paste0(host, "/annoq-test/_search"), 
             content_type_json(), 
             body = request_body)
   #print(r)
@@ -271,7 +271,7 @@ keywordsQuery <- function(keywords){
   }}'
   body = parse_json(body)
   body[['query']][['multi_match']][['query']] = keywords
-  r <- POST(paste0(host, "/annoq-annotations-v2/_search"), content_type_json(), body = toJSON(body, auto_unbox = T))
+  r <- POST(paste0(host, "/annoq-test/_search"), content_type_json(), body = toJSON(body, auto_unbox = T))
   stop_for_status(r)
   content(r, "parsed", "application/json")
 }
