@@ -4,7 +4,7 @@ Title: AnnoQR
 Version: 0.2.0
 Author: Bryan Queme
 Maintainer: Bryan Queme <queme@usc.edu>
-Description: Functions to query the AnnoQ API
+Description: Functions to query the AnnoQ GraphQL API
 Imports:
     httr,
     jsonlite
