@@ -1,6 +1,3 @@
-library(httr)
-library(jsonlite)
-
 # Define the Base URL
 Annotations_URL <- "https://api-v2.annoq.org/graphql"
 
@@ -23,17 +20,20 @@ create_annotations_query_string <- function(annotations) {
 #' @return A character string with the query result.
 #' @export
 perform_graphql_query <- function(query) {
-  response <- POST(
-    Annotations_URL, 
-    content_type_json(), 
+  response <- httr::POST(
+    url = Annotations_URL, 
     body = list(query = query),
-    encode = "json"
+    encode = "json",
+    httr::add_headers(
+      `Content-Type` = "application/json",
+      `Accept` = "application/json"
+    )
   )
-  stop_for_status(response)
-  content(response, "text", encoding = "UTF-8")
+  httr::stop_for_status(response)
+  httr::content(response, "text", encoding = "UTF-8")
 }
 
-#' regionQuery
+#' regionQ
 #'
 #' Get SNPs by region.
 #'
@@ -55,11 +55,11 @@ regionQ <- function(chr, start, end, annotations_to_retrieve) {
   }', chr, start, end, annotations_query_string)
   
   response_content <- perform_graphql_query(query)
-  data <- fromJSON(response_content, flatten = TRUE)
+  data <- jsonlite::fromJSON(response_content, flatten = TRUE)
   data$data$get_SNPs_by_chromosome$snps
 }
 
-#' rsidQuery
+#' rsidQ
 #'
 #' Get SNP by rsID.
 #'
@@ -79,11 +79,11 @@ rsidQ <- function(rsID, annotations_to_retrieve) {
   }', rsID, annotations_query_string)
   
   response_content <- perform_graphql_query(query)
-  data <- fromJSON(response_content, flatten = TRUE)
+  data <- jsonlite::fromJSON(response_content, flatten = TRUE)
   data$data$get_SNPs_by_RsID$snps
 }
 
-#' rsidsQuery
+#' rsidsQ
 #'
 #' Get SNPs by multiple rsIDs.
 #'
@@ -104,17 +104,6 @@ rsidsQ <- function(rsIDs, annotations_to_retrieve) {
   }', rsIDs_string, annotations_query_string)
   
   response_content <- perform_graphql_query(query)
-  data <- fromJSON(response_content, flatten = TRUE)
+  data <- jsonlite::fromJSON(response_content, flatten = TRUE)
   data$data$get_SNPs_by_RsIDs$snps
 }
-
-# Example usage:
-# annotations_to_retrieve <- c("chr", "pos", "ref", "alt")
-# snps <- regionQuery("18", 1, 50000, annotations_to_retrieve)
-# head(snps)
-
-# snp <- rsidQuery("rs559687999", annotations_to_retrieve)
-# print(snp)
-
-# snps <- rsidsQuery(c("rs115366554", "rs189126619"), annotations_to_retrieve)
-# print(snps)
