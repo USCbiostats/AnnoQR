@@ -2,7 +2,7 @@ library(httr)
 library(jsonlite)
 
 # Define the Base URL
-Annotations_URL <- "https://annoq.org/api-v2/graphql"
+Annotations_URL <- "https://api-v2.annoq.org/graphql"
 
 #' create_annotations_query_string
 #'
