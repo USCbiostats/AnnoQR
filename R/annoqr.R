@@ -58,6 +58,11 @@ BASE_URL <- "https://api-v2-dev.annoq.org"
 #'
 #' @return A list containing the available SNP attributes.
 #'
+#' @examples
+#' # Retrieve all available SNP attributes
+#' attributes <- snpAttributesQuery()
+#' print(attributes)
+#'
 #' @export
 snpAttributesQuery <- function() {
   url <- paste0(BASE_URL, "/fastapi/snpAttributes")
@@ -84,6 +89,20 @@ snpAttributesQuery <- function() {
 #' @param filter_fields SNP attribute labels that should not be empty for the record to be retrieved
 #'
 #' @return A list containing the SNP information.
+#'
+#' @examples
+#' # Search for SNPs on chromosome 1 between positions 10000 and 20000
+#' snps <- regionQuery(chromosome_identifier = "1", 
+#'                    start_position = 10000, 
+#'                    end_position = 20000)
+#' print(snps)
+#' 
+#' # Search with specific fields returned
+#' snps <- regionQuery(chromosome_identifier = "X", 
+#'                    start_position = 100000, 
+#'                    end_position = 200000,
+#'                    fields = c("Basic Info", "chr", "pos", "ref", "alt"))
+#' print(snps)
 #'
 #' @export
 regionQuery <- function(chromosome_identifier,
@@ -137,6 +156,16 @@ regionQuery <- function(chromosome_identifier,
 #'
 #' @return A list containing the SNP information.
 #'
+#' @examples
+#' # Search for specific RSIDs
+#' rsid_results <- rsidsQuery(rsid_list = c("rs123456", "rs789012"))
+#' print(rsid_results)
+#' 
+#' # Search with specific fields returned
+#' rsid_results <- rsidsQuery(rsid_list = "rs123456,rs789012",
+#'                           fields = c("Basic Info", "chr", "pos"))
+#' print(rsid_results)
+#'
 #' @export
 rsidsQuery <- function(rsid_list = NULL,
                                   fields = NULL,
@@ -188,6 +217,16 @@ rsidsQuery <- function(rsid_list = NULL,
 #'
 #' @return A list containing the SNP information.
 #'
+#' @examples
+#' # Search for SNPs associated with a specific gene
+#' gene_results <- geneQuery(gene = "BRCA1")
+#' print(gene_results)
+#' 
+#' # Search with specific fields returned
+#' gene_results <- geneQuery(gene = "TP53",
+#'                          fields = c("Basic Info", "chr", "pos", "ref", "alt"))
+#' print(gene_results)
+#'
 #' @export
 geneQuery <- function(gene = NULL,
                                      fields = NULL,
@@ -236,6 +275,20 @@ geneQuery <- function(gene = NULL,
 #'
 #' @return The count of SNPs matching the criteria.
 #'
+#' @examples
+#' # Count SNPs on chromosome 1 between positions 10000 and 20000
+#' count <- countRegionQuery(chromosome_identifier = "1", 
+#'                         start_position = 10000, 
+#'                         end_position = 20000)
+#' print(paste("Number of SNPs:", count))
+#' 
+#' # Count with filter fields
+#' count <- countRegionQuery(chromosome_identifier = "X", 
+#'                         start_position = 100000, 
+#'                         end_position = 200000,
+#'                         filter_fields = c("pos", "chr"))
+#' print(paste("Number of SNPs:", count))
+#'
 #' @export
 countRegionQuery <- function(chromosome_identifier,
                               start_position = NULL,
@@ -276,6 +329,16 @@ countRegionQuery <- function(chromosome_identifier,
 #'
 #' @return The count of SNPs matching the criteria.
 #'
+#' @examples
+#' # Count SNPs for specific RSIDs
+#' count <- countRsidsQuery(rsid_list = c("rs123456", "rs789012"))
+#' print(paste("Number of SNPs:", count))
+#' 
+#' # Count with filter fields
+#' count <- countRsidsQuery(rsid_list = "rs123456,rs789012",
+#'                        filter_fields = c("pos"))
+#' print(paste("Number of SNPs:", count))
+#'
 #' @export
 countRsidsQuery <- function(rsid_list = NULL,
                                     filter_fields = NULL) {
@@ -314,6 +377,16 @@ countRsidsQuery <- function(rsid_list = NULL,
 #' @param filter_fields SNP attribute labels that should not be empty for the record to be retrieved
 #'
 #' @return The count of SNPs matching the criteria.
+#'
+#' @examples
+#' # Count SNPs associated with a specific gene
+#' count <- countGeneQuery(gene = "BRCA1")
+#' print(paste("Number of SNPs:", count))
+#' 
+#' # Count with filter fields
+#' count <- countGeneQuery(gene = "BRCA1",
+#'                       filter_fields = c("pos", "chr"))
+#' print(paste("Number of SNPs:", count))
 #'
 #' @export
 countGeneQuery <- function(gene = NULL, filter_fields = NULL) {

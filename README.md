@@ -8,10 +8,10 @@ You can install the package directly from GitHub using the `devtools` package:
 
 ```R
 install.packages("devtools")
-devtools::install_github("quemeb/AnnoQR")
+devtools::install_github("USCbiostats/AnnoQR")
 ```
 
-## Usage 
+## Usage
 
 Load the package and use the provided functions to perform queries.
 
