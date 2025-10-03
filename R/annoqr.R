@@ -26,7 +26,9 @@ BASE_URL <- "https://api-v2-dev.annoq.org"
     return(NULL)
   }
   
-  if (is.character(fields)) {
+  if (is.character(fields) && length(fields) == 1) {
+    # Trim whitespace
+    fields <- trimws(fields)
     # Check if it's a file path by attempting to read it
     if (startsWith(fields, "{") && endsWith(fields, "}")) {
       # It's a JSON string
