@@ -4,7 +4,7 @@
 \alias{countGeneQuery}
 \title{Count the number of SNPs defined in the system that have been associated for the specified gene product.}
 \usage{
-countGeneQuery(gene = NULL, filter_fields = NULL)
+countGeneQuery(gene, filter_fields = NULL)
 }
 \arguments{
 \item{gene}{Gene product to search (gene id, gene symbol or UniProt id)}
@@ -23,8 +23,10 @@ count <- countGeneQuery(gene = "BRCA1")
 print(paste("Number of SNPs:", count))
 
 # Count with filter fields
-count <- countGeneQuery(gene = "BRCA1",
-                      filter_fields = c("pos", "chr"))
+count <- countGeneQuery(
+  gene = "BRCA1",
+  filter_fields = c("pos", "chr")
+)
 print(paste("Number of SNPs:", count))
 
 }

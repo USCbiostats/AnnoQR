@@ -4,7 +4,7 @@
 \alias{countRsidsQuery}
 \title{Count the number of SNPs defined in the system that have matching RSIDs from the specified list.}
 \usage{
-countRsidsQuery(rsid_list = NULL, filter_fields = NULL)
+countRsidsQuery(rsid_list, filter_fields = NULL)
 }
 \arguments{
 \item{rsid_list}{List of RSIDs to search, can be comma-separated string or vector of strings}
@@ -23,8 +23,10 @@ count <- countRsidsQuery(rsid_list = c("rs123456", "rs789012"))
 print(paste("Number of SNPs:", count))
 
 # Count with filter fields
-count <- countRsidsQuery(rsid_list = "rs123456,rs789012",
-                       filter_fields = c("pos"))
+count <- countRsidsQuery(
+  rsid_list = "rs123456,rs789012",
+  filter_fields = c("pos")
+)
 print(paste("Number of SNPs:", count))
 
 }

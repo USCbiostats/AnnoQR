@@ -6,10 +6,13 @@
 \usage{
 regionQuery(
   chromosome_identifier,
-  start_position = NULL,
-  end_position = NULL,
+  start_position = 1,
+  end_position = 1e+05,
   fields = NULL,
-  filter_fields = NULL
+  filter_fields = NULL,
+  pagination_from = 0,
+  pagination_size = 1000,
+  fetch_all = FALSE
 )
 }
 \arguments{
@@ -19,9 +22,15 @@ regionQuery(
 
 \item{end_position}{End position region of search (default: 100000)}
 
-\item{fields}{Fields to return, can be JSON string, file path, or vector of attributes}
+\item{fields}{Fields to return, can be JSON string, file path, or vector of attributes. Number of fields is limited to 20.}
 
 \item{filter_fields}{SNP attribute labels that should not be empty for the record to be retrieved}
+
+\item{pagination_from}{Pagination start index (default: 0)}
+
+\item{pagination_size}{Pagination page size (default: 1000)}
+
+\item{fetch_all}{If TRUE, retrieves all matching SNPs by downloading all pages (default: FALSE)}
 }
 \value{
 A list containing the SNP information.
@@ -29,18 +38,39 @@ A list containing the SNP information.
 \description{
 Search for SNPs by chromosome id and position range.
 }
+\details{
+If fetch_all is TRUE, pagination_from and pagination_size are ignored.
+The function will return all matching SNPs in a single list.
+It only supports up to 1,000,000 SNPs being fetched in total.
+
+If using pagination (fetch_all=FALSE), you cannot fetch more than the first 10,000 SNPs over all pages.
+pagination_from + pagination_size must be <= 10,000.
+}
 \examples{
 # Search for SNPs on chromosome 1 between positions 10000 and 20000
-snps <- regionQuery(chromosome_identifier = "1", 
-                   start_position = 10000, 
-                   end_position = 20000)
+snps <- regionQuery(
+  chromosome_identifier = "1",
+  start_position = 10000,
+  end_position = 20000
+)
 print(snps)
 
 # Search with specific fields returned
-snps <- regionQuery(chromosome_identifier = "X", 
-                   start_position = 100000, 
-                   end_position = 200000,
-                   fields = c("Basic Info", "chr", "pos", "ref", "alt"))
+snps <- regionQuery(
+  chromosome_identifier = "X",
+  start_position = 100000,
+  end_position = 200000,
+  fields = c("Basic Info", "chr", "pos", "ref", "alt")
+)
+print(snps)
+
+# Fetch all results
+snps <- regionQuery(
+  chromosome_identifier = "1",
+  start_position = 10000,
+  end_position = 20000,
+  fetch_all = TRUE
+)
 print(snps)
 
 }

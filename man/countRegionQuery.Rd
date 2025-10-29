@@ -6,8 +6,8 @@
 \usage{
 countRegionQuery(
   chromosome_identifier,
-  start_position = NULL,
-  end_position = NULL,
+  start_position = 1,
+  end_position = 1e+05,
   filter_fields = NULL
 )
 }
@@ -28,16 +28,20 @@ Count SNPs based on specified chromosome, start position, end position and filte
 }
 \examples{
 # Count SNPs on chromosome 1 between positions 10000 and 20000
-count <- countRegionQuery(chromosome_identifier = "1", 
-                        start_position = 10000, 
-                        end_position = 20000)
+count <- countRegionQuery(
+  chromosome_identifier = "1",
+  start_position = 10000,
+  end_position = 20000
+)
 print(paste("Number of SNPs:", count))
 
 # Count with filter fields
-count <- countRegionQuery(chromosome_identifier = "X", 
-                        start_position = 100000, 
-                        end_position = 200000,
-                        filter_fields = c("pos", "chr"))
+count <- countRegionQuery(
+  chromosome_identifier = "X",
+  start_position = 100000,
+  end_position = 200000,
+  filter_fields = c("pos", "chr")
+)
 print(paste("Number of SNPs:", count))
 
 }

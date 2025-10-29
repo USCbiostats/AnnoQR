@@ -25,7 +25,7 @@ BASE_URL <- "https://api-v2-dev.annoq.org"
   if (is.null(fields)) {
     return(NULL)
   }
-  
+
   if (is.character(fields) && length(fields) == 1) {
     # Trim whitespace
     fields <- trimws(fields)
@@ -56,6 +56,35 @@ BASE_URL <- "https://api-v2-dev.annoq.org"
 }
 
 
+#' Helper function to download all SNPs using the download API endpoint.
+#'
+#' @param url The API endpoint URL for downloading SNPs.
+#' @param params The parameters to be sent with the request.
+#'
+#' @return A list containing the SNP information.
+#' @keywords internal
+#' @noRd 
+.download_all_snps <- function(url, params) {
+  params[["format"]] <- "ndjson"
+
+  response <- httr::GET(url, query = params)
+  httr::stop_for_status(response)
+
+  content_text <- httr::content(response, "text", encoding = "UTF-8")
+  lines <- strsplit(content_text, "\n")[[1]]
+
+  snp_list <- list()
+  for (line in lines) {
+    if (nchar(trimws(line)) > 0) {
+      snp_record <- jsonlite::fromJSON(line)
+      snp_list <- c(snp_list, list(snp_record))
+    }
+  }
+
+  return(snp_list)
+}
+
+
 #' Retrieve available list of SNP attributes.
 #'
 #' @return A list containing the available SNP attributes.
@@ -67,17 +96,17 @@ BASE_URL <- "https://api-v2-dev.annoq.org"
 #'
 #' @export
 snpAttributesQuery <- function() {
-  url <- paste0(BASE_URL, "/fastapi/snpAttributes")
-  
-  response <- httr::POST(url)
+  url <- paste0(BASE_URL, "/snpAttributes")
+
+  response <- httr::GET(url)
   httr::stop_for_status(response)
-  
+
   response_content <- jsonlite::fromJSON(httr::content(response, "text", encoding = "UTF-8"))
-  
+
   if (!"results" %in% names(response_content)) {
     stop(paste("Unexpected response from server:", jsonlite::toJSON(response_content)))
   }
-  
+
   return(response_content$results)
 }
 
@@ -87,65 +116,104 @@ snpAttributesQuery <- function() {
 #' @param chromosome_identifier Chromosome id to search (e.g., "1", "2", "X")
 #' @param start_position Start position region of search (default: 1)
 #' @param end_position End position region of search (default: 100000)
-#' @param fields Fields to return, can be JSON string, file path, or vector of attributes
+#' @param fields Fields to return, can be JSON string, file path, or vector of attributes. Number of fields is limited to 20.
 #' @param filter_fields SNP attribute labels that should not be empty for the record to be retrieved
+#' @param pagination_from Pagination start index (default: 0)
+#' @param pagination_size Pagination page size (default: 1000)
+#' @param fetch_all If TRUE, retrieves all matching SNPs by downloading all pages (default: FALSE)
 #'
 #' @return A list containing the SNP information.
 #'
+#' @details
+#' If fetch_all is TRUE, pagination_from and pagination_size are ignored.
+#' The function will return all matching SNPs in a single list.
+#' It only supports up to 1,000,000 SNPs being fetched in total.
+#'
+#' If using pagination (fetch_all=FALSE), you cannot fetch more than the first 10,000 SNPs over all pages.
+#' pagination_from + pagination_size must be <= 10,000.
+#'
 #' @examples
 #' # Search for SNPs on chromosome 1 between positions 10000 and 20000
-#' snps <- regionQuery(chromosome_identifier = "1", 
-#'                    start_position = 10000, 
-#'                    end_position = 20000)
+#' snps <- regionQuery(
+#'   chromosome_identifier = "1",
+#'   start_position = 10000,
+#'   end_position = 20000
+#' )
 #' print(snps)
-#' 
+#'
 #' # Search with specific fields returned
-#' snps <- regionQuery(chromosome_identifier = "X", 
-#'                    start_position = 100000, 
-#'                    end_position = 200000,
-#'                    fields = c("Basic Info", "chr", "pos", "ref", "alt"))
+#' snps <- regionQuery(
+#'   chromosome_identifier = "X",
+#'   start_position = 100000,
+#'   end_position = 200000,
+#'   fields = c("Basic Info", "chr", "pos", "ref", "alt")
+#' )
+#' print(snps)
+#'
+#' # Fetch all results
+#' snps <- regionQuery(
+#'   chromosome_identifier = "1",
+#'   start_position = 10000,
+#'   end_position = 20000,
+#'   fetch_all = TRUE
+#' )
 #' print(snps)
 #'
 #' @export
 regionQuery <- function(chromosome_identifier,
-                            start_position = NULL,
-                            end_position = NULL,
-                            fields = NULL,
-                            filter_fields = NULL) {
-  url <- paste0(BASE_URL, "/fastapi/snp/chr")
-  
+                        start_position = 1,
+                        end_position = 100000,
+                        fields = NULL,
+                        filter_fields = NULL,
+                        pagination_from = 0,
+                        pagination_size = 1000,
+                        fetch_all = FALSE) {
   params <- list("chromosome_identifier" = chromosome_identifier)
-  
+
   if (!is.null(start_position)) {
     params[["start_position"]] <- as.character(start_position)
   }
   if (!is.null(end_position)) {
     params[["end_position"]] <- as.character(end_position)
   }
-  
+
   processed_fields <- .process_fields_param(fields)
   if (!is.null(processed_fields)) {
     params[["fields"]] <- processed_fields
   }
-  
+
   if (!is.null(filter_fields)) {
     params[["filter_fields"]] <- paste(filter_fields, collapse = ",")
   }
-  
-  # Note: pagination parameters are ignored as they don't function
-  # But they are still required by the API (dummy values used)
-  params[["pagination_from"]] <- "0"
-  params[["pagination_size"]] <- "10"
-  
-  response <- httr::POST(url, query = params)
+
+  if (fetch_all) {
+    # Use the download api to fetch all results
+    url <- paste0(BASE_URL, "/snp/chr/download")
+    return(.download_all_snps(url, params))
+  }
+
+  if (pagination_from < 0 || pagination_size <= 0) {
+    stop("pagination_from must be >= 0 and pagination_size must be > 0.")
+  }
+
+  if (pagination_from + pagination_size > 10000) {
+    stop("When fetch_all is FALSE, pagination_from + pagination_size must be <= 10,000.")
+  }
+
+  url <- paste0(BASE_URL, "/snp/chr")
+
+  params[["pagination_from"]] <- as.character(pagination_from)
+  params[["pagination_size"]] <- as.character(pagination_size)
+
+  response <- httr::GET(url, query = params)
   httr::stop_for_status(response)
-  
+
   response_content <- jsonlite::fromJSON(httr::content(response, "text", encoding = "UTF-8"))
-  
+
   if (!"details" %in% names(response_content)) {
     stop(paste("Unexpected response from server:", jsonlite::toJSON(response_content)))
   }
-  
+
   return(response_content$details)
 }
 
@@ -153,29 +221,50 @@ regionQuery <- function(chromosome_identifier,
 #' Search for specified list of RSIDs.
 #'
 #' @param rsid_list List of RSIDs to search, can be comma-separated string or vector of strings
-#' @param fields Fields to return, can be JSON string, file path, or vector of attributes
+#' @param fields Fields to return, can be JSON string, file path, or vector of attributes. Number of fields is limited to 20.
 #' @param filter_fields SNP attribute labels that should not be empty for the record to be retrieved
+#' @param pagination_from Pagination start index (default: 0)
+#' @param pagination_size Pagination page size (default: 1000)
+#' @param fetch_all If TRUE, retrieves all matching SNPs by downloading all pages (default: FALSE)
 #'
 #' @return A list containing the SNP information.
+#'
+#' @details
+#' If fetch_all is TRUE, pagination_from and pagination_size are ignored.
+#' The function will return all matching SNPs in a single list.
+#' It only supports up to 1,000,000 SNPs being fetched in total.
+#'
+#' If using pagination (fetch_all=FALSE), you cannot fetch more than the first 10,000 SNPs over all pages.
+#' pagination_from + pagination_size must be <= 10,000.
 #'
 #' @examples
 #' # Search for specific RSIDs
 #' rsid_results <- rsidsQuery(rsid_list = c("rs123456", "rs789012"))
 #' print(rsid_results)
-#' 
+#'
 #' # Search with specific fields returned
-#' rsid_results <- rsidsQuery(rsid_list = "rs123456,rs789012",
-#'                           fields = c("Basic Info", "chr", "pos"))
+#' rsid_results <- rsidsQuery(
+#'   rsid_list = "rs123456,rs789012",
+#'   fields = c("Basic Info", "chr", "pos")
+#' )
+#' print(rsid_results)
+#'
+#' # Fetch all results
+#' rsid_results <- rsidsQuery(
+#'   rsid_list = c("rs123456", "rs789012"),
+#'   fetch_all = TRUE
+#' )
 #' print(rsid_results)
 #'
 #' @export
-rsidsQuery <- function(rsid_list = NULL,
-                                  fields = NULL,
-                                  filter_fields = NULL) {
-  url <- paste0(BASE_URL, "/fastapi/snp/rsidList")
-  
+rsidsQuery <- function(rsid_list,
+                       fields = NULL,
+                       filter_fields = NULL,
+                       pagination_from = 0,
+                       pagination_size = 1000,
+                       fetch_all = FALSE) {
   params <- list()
-  
+
   if (!is.null(rsid_list)) {
     if (is.vector(rsid_list)) {
       params[["rsid_list"]] <- paste(rsid_list, collapse = ",")
@@ -183,30 +272,44 @@ rsidsQuery <- function(rsid_list = NULL,
       params[["rsid_list"]] <- rsid_list
     }
   }
-  
+
   processed_fields <- .process_fields_param(fields)
   if (!is.null(processed_fields)) {
     params[["fields"]] <- processed_fields
   }
-  
+
   if (!is.null(filter_fields)) {
     params[["filter_fields"]] <- paste(filter_fields, collapse = ",")
   }
-  
-  # Note: pagination parameters are ignored as they don't function
-  # But they are still required by the API (dummy values used)
-  params[["pagination_from"]] <- "0"
-  params[["pagination_size"]] <- "100"
-  
-  response <- httr::POST(url, query = params)
+
+  if (fetch_all) {
+    # Use the download api to fetch all results
+    url <- paste0(BASE_URL, "/snp/rsidList/download")
+    return(.download_all_snps(url, params))
+  }
+
+  if (pagination_from < 0 || pagination_size <= 0) {
+    stop("pagination_from must be >= 0 and pagination_size must be > 0.")
+  }
+
+  if (pagination_from + pagination_size > 10000) {
+    stop("When fetch_all is FALSE, pagination_from + pagination_size must be <= 10,000.")
+  }
+
+  url <- paste0(BASE_URL, "/snp/rsidList")
+
+  params[["pagination_from"]] <- as.character(pagination_from)
+  params[["pagination_size"]] <- as.character(pagination_size)
+
+  response <- httr::GET(url, query = params)
   httr::stop_for_status(response)
-  
+
   response_content <- jsonlite::fromJSON(httr::content(response, "text", encoding = "UTF-8"))
-  
+
   if (!"details" %in% names(response_content)) {
     stop(paste("Unexpected response from server:", jsonlite::toJSON(response_content)))
   }
-  
+
   return(response_content$details)
 }
 
@@ -214,56 +317,88 @@ rsidsQuery <- function(rsid_list = NULL,
 #' Search for specified gene product; this can be a gene id, gene symbol or UniProt id.
 #'
 #' @param gene Gene product to search
-#' @param fields Fields to return, can be JSON string, file path, or vector of attributes
+#' @param fields Fields to return, can be JSON string, file path, or vector of attributes. Number of fields is limited to 20.
 #' @param filter_fields SNP attribute labels that should not be empty for the record to be retrieved
+#' @param pagination_from Pagination start index (default: 0)
+#' @param pagination_size Pagination page size (default: 1000)
+#' @param fetch_all If TRUE, retrieves all matching SNPs by downloading all pages (default: FALSE)
 #'
 #' @return A list containing the SNP information.
+#'
+#' @details
+#' If fetch_all is TRUE, pagination_from and pagination_size are ignored.
+#' The function will return all matching SNPs in a single list.
+#' It only supports up to 1,000,000 SNPs being fetched in total.
+#'
+#' If using pagination (fetch_all=FALSE), you cannot fetch more than the first 10,000 SNPs over all pages.
+#' pagination_from + pagination_size must be <= 10,000.
 #'
 #' @examples
 #' # Search for SNPs associated with a specific gene
 #' gene_results <- geneQuery(gene = "BRCA1")
 #' print(gene_results)
-#' 
+#'
 #' # Search with specific fields returned
-#' gene_results <- geneQuery(gene = "TP53",
-#'                          fields = c("Basic Info", "chr", "pos", "ref", "alt"))
+#' gene_results <- geneQuery(
+#'   gene = "TP53",
+#'   fields = c("Basic Info", "chr", "pos", "ref", "alt")
+#' )
+#' print(gene_results)
+#'
+#' # Fetch all results
+#' gene_results <- geneQuery(gene = "BRCA1", fetch_all = TRUE)
 #' print(gene_results)
 #'
 #' @export
-geneQuery <- function(gene = NULL,
-                                     fields = NULL,
-                                     filter_fields = NULL) {
-  url <- paste0(BASE_URL, "/fastapi/snp/gene_product")
-  
+geneQuery <- function(gene,
+                      fields = NULL,
+                      filter_fields = NULL,
+                      pagination_from = 0,
+                      pagination_size = 1000,
+                      fetch_all = FALSE) {
   params <- list()
-  
+
   if (!is.null(gene)) {
     params[["gene"]] <- gene
   }
-  
+
   processed_fields <- .process_fields_param(fields)
   if (!is.null(processed_fields)) {
     params[["fields"]] <- processed_fields
   }
-  
+
   if (!is.null(filter_fields)) {
     params[["filter_fields"]] <- paste(filter_fields, collapse = ",")
   }
-  
-  # Note: pagination parameters are ignored as they don't function
-  # But they are still required by the API (dummy values used)
-  params[["pagination_from"]] <- "0"
-  params[["pagination_size"]] <- "100"
-  
-  response <- httr::POST(url, query = params)
+
+  if (fetch_all) {
+    # Use the download api to fetch all results
+    url <- paste0(BASE_URL, "/snp/gene_product/download")
+    return(.download_all_snps(url, params))
+  }
+
+  if (pagination_from < 0 || pagination_size <= 0) {
+    stop("pagination_from must be >= 0 and pagination_size must be > 0.")
+  }
+
+  if (pagination_from + pagination_size > 10000) {
+    stop("When fetch_all is FALSE, pagination_from + pagination_size must be <= 10,000.")
+  }
+
+  url <- paste0(BASE_URL, "/snp/gene_product")
+
+  params[["pagination_from"]] <- as.character(pagination_from)
+  params[["pagination_size"]] <- as.character(pagination_size)
+
+  response <- httr::GET(url, query = params)
   httr::stop_for_status(response)
-  
+
   response_content <- jsonlite::fromJSON(httr::content(response, "text", encoding = "UTF-8"))
-  
+
   if (!"details" %in% names(response_content)) {
     stop(paste("Unexpected response from server:", jsonlite::toJSON(response_content)))
   }
-  
+
   return(response_content$details)
 }
 
@@ -279,47 +414,51 @@ geneQuery <- function(gene = NULL,
 #'
 #' @examples
 #' # Count SNPs on chromosome 1 between positions 10000 and 20000
-#' count <- countRegionQuery(chromosome_identifier = "1", 
-#'                         start_position = 10000, 
-#'                         end_position = 20000)
+#' count <- countRegionQuery(
+#'   chromosome_identifier = "1",
+#'   start_position = 10000,
+#'   end_position = 20000
+#' )
 #' print(paste("Number of SNPs:", count))
-#' 
+#'
 #' # Count with filter fields
-#' count <- countRegionQuery(chromosome_identifier = "X", 
-#'                         start_position = 100000, 
-#'                         end_position = 200000,
-#'                         filter_fields = c("pos", "chr"))
+#' count <- countRegionQuery(
+#'   chromosome_identifier = "X",
+#'   start_position = 100000,
+#'   end_position = 200000,
+#'   filter_fields = c("pos", "chr")
+#' )
 #' print(paste("Number of SNPs:", count))
 #'
 #' @export
 countRegionQuery <- function(chromosome_identifier,
-                              start_position = NULL,
-                              end_position = NULL,
-                              filter_fields = NULL) {
-  url <- paste0(BASE_URL, "/fastapi/count/chr")
-  
+                             start_position = 1,
+                             end_position = 100000,
+                             filter_fields = NULL) {
+  url <- paste0(BASE_URL, "/count/chr")
+
   params <- list("chromosome_identifier" = chromosome_identifier)
-  
+
   if (!is.null(start_position)) {
     params[["start_position"]] <- as.character(start_position)
   }
   if (!is.null(end_position)) {
     params[["end_position"]] <- as.character(end_position)
   }
-  
+
   if (!is.null(filter_fields)) {
     params[["filter_fields"]] <- paste(filter_fields, collapse = ",")
   }
-  
-  response <- httr::POST(url, query = params)
+
+  response <- httr::GET(url, query = params)
   httr::stop_for_status(response)
-  
+
   response_content <- jsonlite::fromJSON(httr::content(response, "text", encoding = "UTF-8"))
-  
+
   if (!"details" %in% names(response_content)) {
     stop(paste("Unexpected response from server:", jsonlite::toJSON(response_content)))
   }
-  
+
   return(response_content$details)
 }
 
@@ -335,19 +474,21 @@ countRegionQuery <- function(chromosome_identifier,
 #' # Count SNPs for specific RSIDs
 #' count <- countRsidsQuery(rsid_list = c("rs123456", "rs789012"))
 #' print(paste("Number of SNPs:", count))
-#' 
+#'
 #' # Count with filter fields
-#' count <- countRsidsQuery(rsid_list = "rs123456,rs789012",
-#'                        filter_fields = c("pos"))
+#' count <- countRsidsQuery(
+#'   rsid_list = "rs123456,rs789012",
+#'   filter_fields = c("pos")
+#' )
 #' print(paste("Number of SNPs:", count))
 #'
 #' @export
-countRsidsQuery <- function(rsid_list = NULL,
-                                    filter_fields = NULL) {
-  url <- paste0(BASE_URL, "/fastapi/count/rsidList")
-  
+countRsidsQuery <- function(rsid_list,
+                            filter_fields = NULL) {
+  url <- paste0(BASE_URL, "/count/rsidList")
+
   params <- list()
-  
+
   if (!is.null(rsid_list)) {
     if (is.vector(rsid_list)) {
       params[["rsid_list"]] <- paste(rsid_list, collapse = ",")
@@ -355,20 +496,20 @@ countRsidsQuery <- function(rsid_list = NULL,
       params[["rsid_list"]] <- rsid_list
     }
   }
-  
+
   if (!is.null(filter_fields)) {
     params[["filter_fields"]] <- paste(filter_fields, collapse = ",")
   }
-  
-  response <- httr::POST(url, query = params)
+
+  response <- httr::GET(url, query = params)
   httr::stop_for_status(response)
-  
+
   response_content <- jsonlite::fromJSON(httr::content(response, "text", encoding = "UTF-8"))
-  
+
   if (!"details" %in% names(response_content)) {
     stop(paste("Unexpected response from server:", jsonlite::toJSON(response_content)))
   }
-  
+
   return(response_content$details)
 }
 
@@ -384,34 +525,36 @@ countRsidsQuery <- function(rsid_list = NULL,
 #' # Count SNPs associated with a specific gene
 #' count <- countGeneQuery(gene = "BRCA1")
 #' print(paste("Number of SNPs:", count))
-#' 
+#'
 #' # Count with filter fields
-#' count <- countGeneQuery(gene = "BRCA1",
-#'                       filter_fields = c("pos", "chr"))
+#' count <- countGeneQuery(
+#'   gene = "BRCA1",
+#'   filter_fields = c("pos", "chr")
+#' )
 #' print(paste("Number of SNPs:", count))
 #'
 #' @export
-countGeneQuery <- function(gene = NULL, filter_fields = NULL) {
-  url <- paste0(BASE_URL, "/fastapi/count/gene_product")
-  
+countGeneQuery <- function(gene, filter_fields = NULL) {
+  url <- paste0(BASE_URL, "/count/gene_product")
+
   params <- list()
-  
+
   if (!is.null(gene)) {
     params[["gene"]] <- gene
   }
-  
+
   if (!is.null(filter_fields)) {
     params[["filter_fields"]] <- paste(filter_fields, collapse = ",")
   }
-  
-  response <- httr::POST(url, query = params)
+
+  response <- httr::GET(url, query = params)
   httr::stop_for_status(response)
-  
+
   response_content <- jsonlite::fromJSON(httr::content(response, "text", encoding = "UTF-8"))
-  
+
   if (!"details" %in% names(response_content)) {
     stop(paste("Unexpected response from server:", jsonlite::toJSON(response_content)))
   }
-  
+
   return(response_content$details)
 }

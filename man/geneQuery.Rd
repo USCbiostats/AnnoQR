@@ -4,14 +4,27 @@
 \alias{geneQuery}
 \title{Search for specified gene product; this can be a gene id, gene symbol or UniProt id.}
 \usage{
-geneQuery(gene = NULL, fields = NULL, filter_fields = NULL)
+geneQuery(
+  gene,
+  fields = NULL,
+  filter_fields = NULL,
+  pagination_from = 0,
+  pagination_size = 1000,
+  fetch_all = FALSE
+)
 }
 \arguments{
 \item{gene}{Gene product to search}
 
-\item{fields}{Fields to return, can be JSON string, file path, or vector of attributes}
+\item{fields}{Fields to return, can be JSON string, file path, or vector of attributes. Number of fields is limited to 20.}
 
 \item{filter_fields}{SNP attribute labels that should not be empty for the record to be retrieved}
+
+\item{pagination_from}{Pagination start index (default: 0)}
+
+\item{pagination_size}{Pagination page size (default: 1000)}
+
+\item{fetch_all}{If TRUE, retrieves all matching SNPs by downloading all pages (default: FALSE)}
 }
 \value{
 A list containing the SNP information.
@@ -19,14 +32,28 @@ A list containing the SNP information.
 \description{
 Search for specified gene product; this can be a gene id, gene symbol or UniProt id.
 }
+\details{
+If fetch_all is TRUE, pagination_from and pagination_size are ignored.
+The function will return all matching SNPs in a single list.
+It only supports up to 1,000,000 SNPs being fetched in total.
+
+If using pagination (fetch_all=FALSE), you cannot fetch more than the first 10,000 SNPs over all pages.
+pagination_from + pagination_size must be <= 10,000.
+}
 \examples{
 # Search for SNPs associated with a specific gene
 gene_results <- geneQuery(gene = "BRCA1")
 print(gene_results)
 
 # Search with specific fields returned
-gene_results <- geneQuery(gene = "TP53",
-                         fields = c("Basic Info", "chr", "pos", "ref", "alt"))
+gene_results <- geneQuery(
+  gene = "TP53",
+  fields = c("Basic Info", "chr", "pos", "ref", "alt")
+)
+print(gene_results)
+
+# Fetch all results
+gene_results <- geneQuery(gene = "BRCA1", fetch_all = TRUE)
 print(gene_results)
 
 }
