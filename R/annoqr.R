@@ -67,21 +67,21 @@ BASE_URL <- "https://api-v2-dev.annoq.org"
 .download_all_snps <- function(url, params) {
   params[["format"]] <- "ndjson"
 
-  response <- httr::GET(url, query = params)
-  httr::stop_for_status(response)
+  resp <- httr::POST(url, query = params)
+  httr::stop_for_status(resp)
 
-  content_text <- httr::content(response, "text", encoding = "UTF-8")
-  lines <- strsplit(content_text, "\n")[[1]]
+  txt <- httr::content(resp, as = "text", encoding = "UTF-8")
 
-  snp_list <- list()
-  for (line in lines) {
-    if (nchar(trimws(line)) > 0) {
-      snp_record <- jsonlite::fromJSON(line)
-      snp_list <- c(snp_list, list(snp_record))
-    }
-  }
+  con <- textConnection(txt)
+  on.exit(close(con), add = TRUE)
 
-  return(snp_list)
+  # Parse NDJSON (one JSON object per line) into a data.frame
+  df <- jsonlite::stream_in(con, verbose = FALSE)
+
+  # Ensure it's a base data.frame (not tibble), just in case
+  df <- as.data.frame(df, stringsAsFactors = FALSE)
+
+  df
 }
 
 
@@ -171,10 +171,10 @@ regionQuery <- function(chromosome_identifier,
   params <- list("chromosome_identifier" = chromosome_identifier)
 
   if (!is.null(start_position)) {
-    params[["start_position"]] <- as.character(start_position)
+    params[["start_position"]] <- sprintf("%d", start_position)
   }
   if (!is.null(end_position)) {
-    params[["end_position"]] <- as.character(end_position)
+    params[["end_position"]] <- sprintf("%d", end_position)
   }
 
   processed_fields <- .process_fields_param(fields)
@@ -202,8 +202,8 @@ regionQuery <- function(chromosome_identifier,
 
   url <- paste0(BASE_URL, "/snp/chr")
 
-  params[["pagination_from"]] <- as.character(pagination_from)
-  params[["pagination_size"]] <- as.character(pagination_size)
+  params[["pagination_from"]] <- sprintf("%d", pagination_from)
+  params[["pagination_size"]] <- sprintf("%d", pagination_size)
 
   response <- httr::GET(url, query = params)
   httr::stop_for_status(response)
@@ -298,8 +298,8 @@ rsidsQuery <- function(rsid_list,
 
   url <- paste0(BASE_URL, "/snp/rsidList")
 
-  params[["pagination_from"]] <- as.character(pagination_from)
-  params[["pagination_size"]] <- as.character(pagination_size)
+  params[["pagination_from"]] <- sprintf("%d", pagination_from)
+  params[["pagination_size"]] <- sprintf("%d", pagination_size)
 
   response <- httr::GET(url, query = params)
   httr::stop_for_status(response)
@@ -387,8 +387,8 @@ geneQuery <- function(gene,
 
   url <- paste0(BASE_URL, "/snp/gene_product")
 
-  params[["pagination_from"]] <- as.character(pagination_from)
-  params[["pagination_size"]] <- as.character(pagination_size)
+  params[["pagination_from"]] <- sprintf("%d", pagination_from)
+  params[["pagination_size"]] <- sprintf("%d", pagination_size)
 
   response <- httr::GET(url, query = params)
   httr::stop_for_status(response)
@@ -440,10 +440,10 @@ countRegionQuery <- function(chromosome_identifier,
   params <- list("chromosome_identifier" = chromosome_identifier)
 
   if (!is.null(start_position)) {
-    params[["start_position"]] <- as.character(start_position)
+    params[["start_position"]] <- sprintf("%d", start_position)
   }
   if (!is.null(end_position)) {
-    params[["end_position"]] <- as.character(end_position)
+    params[["end_position"]] <- sprintf("%d", end_position)
   }
 
   if (!is.null(filter_fields)) {
