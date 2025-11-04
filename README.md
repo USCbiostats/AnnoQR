@@ -1,6 +1,6 @@
 # AnnoQR
 
-An R package for programmatically accessing SNP data from the Annoq API.
+An R package for programmatically accessing SNP data from the AnnoQ API.
 
 ## Installation
 
@@ -111,7 +111,7 @@ snps <- regionQuery(
 )
 ```
 
-**As a string config exported from [Annoq](https://annoq.org):**
+**As a string config exported from [AnnoQ](https://annoq.org):**
 
 ```R
 snps <- regionQuery(
@@ -122,10 +122,10 @@ snps <- regionQuery(
 )
 ```
 
-**From a JSON config exported from [Annoq](https://annoq.org):**
+**From a JSON config exported from [AnnoQ](https://annoq.org):**
 
 ```R
-# Export the config file: config.txt from Annoq
+# Export the config file: config.txt from AnnoQ
 # {"_source":["chr", "pos", "ref", "alt", "rs_dbSNP151"]}
 
 snps <- regionQuery(
@@ -519,4 +519,4 @@ This package is licensed under the MIT License.
 
 ## Support
 
-For questions or issues related to Annoq itself, please visit the site [Annoq](https://annoq.org)
+For questions or issues related to AnnoQ itself, please visit the site [AnnoQ](https://annoq.org)
