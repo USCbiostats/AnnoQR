@@ -12,7 +12,7 @@ if (!requireNamespace("jsonlite", quietly = TRUE)) {
 }
 
 # Base URL for the Annoq API
-BASE_URL <- "https://api-v2-dev.annoq.org"
+BASE_URL <- "https://api-v2.annoq.org"
 
 
 # Process the fields parameter to handle the three possible input types:
