@@ -16,6 +16,28 @@ devtools::install_github("USCbiostats/AnnoQR")
 - R 3.5 or higher
 - Required packages: `httr`, `jsonlite` (automatically installed)
 
+## Configuration
+
+By default, AnnoQR connects to `https://api-v2.annoq.org`. You can override this by setting the `ANNOQR_BASE_URL` environment variable.
+
+**Option 1: Set in `.Renviron`** (persistent across sessions)
+
+Add the following line to your `.Renviron` file (edit with `usethis::edit_r_environ()`):
+
+```
+ANNOQR_BASE_URL=https://your-custom-api-url.example.com
+```
+
+**Option 2: Set at runtime**
+
+```R
+# Check the current API URL
+annoq_api_url()
+
+# Point at a different server for this session
+annoq_api_url("https://api-v2-dev.annoq.org")
+```
+
 ## Quick Start
 
 ```R
@@ -29,8 +51,10 @@ snps <- regionQuery(
   chromosome_identifier = "1",
   start_position = 1,
   end_position = 100000,
-  fields = c("chr", "pos", "ref", "alt", "rs_dbSNP151")
+  fields = c("chr", "pos", "ref", "alt")
 )
+
+print(head(snps))
 ```
 
 ## Core Functions
@@ -67,10 +91,9 @@ library(AnnoQR)
 # Get all available attributes
 attributes <- snpAttributesQuery()
 
-# attributes is a list of attribute metadata
-for (i in seq_along(attributes)) {
-  cat(sprintf("%s: %s\n", attributes[[i]]$label, attributes[[i]]$description))
-}
+# attributes is a data.frame with columns:
+#   api_label, display_label, definition, data_type, version
+head(attributes)
 ```
 
 ### 2. Querying SNPs by Chromosome
@@ -85,15 +108,17 @@ snps <- regionQuery(
   chromosome_identifier = "1",
   start_position = 1,
   end_position = 100000,
-  fields = c("chr", "pos", "ref", "alt", "rs_dbSNP151")
+  fields = c("chr", "pos", "ref", "alt")
 )
+print(head(snps))
 
 # Query the X chromosome from position 1,000 to 50,000 and get default fields
 snps <- regionQuery(
   chromosome_identifier = "X",
   start_position = 1000,
-  end_position = 50000
+  end_position = 500000
 )
+print(snps)
 ```
 
 #### Selecting Specific Fields
@@ -107,7 +132,7 @@ snps <- regionQuery(
   chromosome_identifier = "1",
   start_position = 1,
   end_position = 10000,
-  fields = c("chr", "pos", "ref", "alt", "rs_dbSNP151")
+  fields = c("chr", "pos", "ref", "alt")
 )
 ```
 
@@ -118,7 +143,7 @@ snps <- regionQuery(
   chromosome_identifier = "1",
   start_position = 1,
   end_position = 10000,
-  fields = '{"_source":["chr", "pos", "ref", "alt", "rs_dbSNP151"]}'
+  fields = '{"_source":["chr", "pos", "ref", "alt"]}'
 )
 ```
 
@@ -126,7 +151,7 @@ snps <- regionQuery(
 
 ```R
 # Export the config file: config.txt from AnnoQ
-# {"_source":["chr", "pos", "ref", "alt", "rs_dbSNP151"]}
+# {"_source":["chr", "pos", "ref", "alt"]}
 
 snps <- regionQuery(
   chromosome_identifier = "1",
@@ -218,7 +243,7 @@ snps <- rsidsQuery(
 ```R
 snps <- rsidsQuery(
   rsid_list = c("rs1219648", "rs2912774", "rs2981582"),
-  fields = c("chr", "pos", "ref", "alt", "rs_dbSNP151")
+  fields = c("chr", "pos", "ref", "alt")
 )
 ```
 
@@ -262,7 +287,7 @@ snps <- geneQuery(gene = "ENSG00000012048")
 ```R
 snps <- geneQuery(
   gene = "TP53",
-  fields = c("chr", "pos", "ref", "alt", "rs_dbSNP151"),
+  fields = c("chr", "pos", "ref", "alt"),
   filter_fields = c("ANNOVAR_ucsc_Transcript_ID")
 )
 ```
@@ -370,7 +395,7 @@ snps <- regionQuery(
   start_position = 1,
   end_position = 1000000,
   filter_fields = c("VEP_ensembl_Gene_ID"),
-  fields = c("chr", "pos", "ref", "alt", "rs_dbSNP151", "VEP_ensembl_Gene_ID")
+  fields = c("chr", "pos", "ref", "alt", "VEP_ensembl_Gene_ID")
 )
 ```
 
@@ -418,7 +443,7 @@ for (gene in genes) {
   
   all_gene_snps[[gene]] <- geneQuery(
     gene = gene,
-    fields = c("chr", "pos", "ref", "alt", "rs_dbSNP151"),
+    fields = c("chr", "pos", "ref", "alt"),
     fetch_all = TRUE
   )
 }
@@ -438,7 +463,7 @@ cat(sprintf("%d out of %d RSIDs found\n", count, length(rsids)))
 # Retrieve all matching SNPs
 snps <- rsidsQuery(
   rsid_list = rsids,
-  fields = c("chr", "pos", "ref", "alt", "rs_dbSNP151"),
+  fields = c("chr", "pos", "ref", "alt"),
   fetch_all = TRUE
 )
 ```

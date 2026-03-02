@@ -11,8 +11,45 @@ if (!requireNamespace("jsonlite", quietly = TRUE)) {
   stop("Package 'jsonlite' is required but not installed.")
 }
 
-# Base URL for the Annoq API
-BASE_URL <- "https://api-v2.annoq.org"
+# Base URL for the Annoq API (configurable via ANNOQR_BASE_URL env var)
+BASE_URL <- Sys.getenv("ANNOQR_BASE_URL", "https://api-v2.annoq.org")
+
+
+#' Get or set the AnnoQ API base URL
+#'
+#' @param url Optional new base URL string. If \code{NULL} (the default),
+#'   returns the current URL. If provided, sets the URL for the current session.
+#' @return The current (or newly set) base URL, invisibly when setting.
+#' @details
+#' The base URL is resolved in this order:
+#' \enumerate{
+#'   \item Value set via \code{annoq_api_url(url)} in the current session
+#'   \item The \code{ANNOQR_BASE_URL} environment variable
+#'   \item The default: \code{"https://api-v2.annoq.org"}
+#' }
+#'
+#' To set the environment variable persistently, add a line to your
+#' \code{.Renviron} file (e.g. via \code{usethis::edit_r_environ()}):
+#' \preformatted{ANNOQR_BASE_URL=https://your-custom-url.example.com}
+#'
+#' @examples
+#' # Check current URL
+#' annoq_api_url()
+#'
+#' # Temporarily point at a dev server
+#' annoq_api_url("https://api-v2-dev.annoq.org")
+#'
+#' # Reset to environment/default
+#' annoq_api_url(Sys.getenv("ANNOQR_BASE_URL", "https://api-v2.annoq.org"))
+#'
+#' @export
+annoq_api_url <- function(url = NULL) {
+  if (!is.null(url)) {
+    assignInMyNamespace("BASE_URL", url)
+    return(invisible(url))
+  }
+  BASE_URL
+}
 
 
 # Process the fields parameter to handle the three possible input types:
