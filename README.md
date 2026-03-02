@@ -18,14 +18,14 @@ devtools::install_github("USCbiostats/AnnoQR")
 
 ## Configuration
 
-By default, AnnoQR connects to `https://api-v2.annoq.org`. You can override this by setting the `ANNOQR_BASE_URL` environment variable.
+By default, AnnoQR connects to `https://api-v2.annoq.org`. You can override this by setting the `ANNOQR_BASE_URL` environment variable to refer to the TopMed API.
 
 **Option 1: Set in `.Renviron`** (persistent across sessions)
 
 Add the following line to your `.Renviron` file (edit with `usethis::edit_r_environ()`):
 
 ```
-ANNOQR_BASE_URL=https://your-custom-api-url.example.com
+ANNOQR_BASE_URL=https://api-v2.topmed.annoq.org
 ```
 
 **Option 2: Set at runtime**
@@ -34,8 +34,8 @@ ANNOQR_BASE_URL=https://your-custom-api-url.example.com
 # Check the current API URL
 annoq_api_url()
 
-# Point at a different server for this session
-annoq_api_url("https://api-v2-dev.annoq.org")
+# Point at a different server for this session.  To access the TopMed API, update as follows
+annoq_api_url("https://api-v2.topmed.annoq.org")
 ```
 
 ## Quick Start
@@ -45,6 +45,7 @@ library(AnnoQR)
 
 # Get available SNP attributes
 attributes <- snpAttributesQuery()
+print(attributes)
 
 # Search SNPs on chromosome 1
 snps <- regionQuery(
