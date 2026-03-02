@@ -1,6 +1,6 @@
 # AnnoQR
 
-An R package for programmatically accessing SNP data from the AnnoQ API.
+An R package for programmatically accessing SNP data from the AnnoQ API.  Not only does the TopMed dataset contain more SNPs, but also, additional attributes.  Furthermore, the RSID attribute name is different.  Therefore, it is important to specify the correct SNP attribute labels when querying the API. 
 
 ## Installation
 
@@ -42,6 +42,10 @@ annoq_api_url("https://api-v2.topmed.annoq.org")
 
 ```R
 library(AnnoQR)
+
+
+# Update to point to TopMed
+annoq_api_url("https://api-v2.topmed.annoq.org")
 
 # Get available SNP attributes
 attributes <- snpAttributesQuery()
