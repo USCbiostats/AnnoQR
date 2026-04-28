@@ -1,6 +1,6 @@
 # AnnoQR
 
-An R package for programmatically accessing SNP data from the AnnoQ API.
+An R package for programmatically accessing SNP data from the AnnoQ API and workflows built on top of those APIs.
 
 ## Installation
 
@@ -35,7 +35,7 @@ snps <- regionQuery(
 
 ## Core Functions
 
-The package provides 7 main functions organized into three categories:
+The package provides 9 main functions organized into four categories:
 
 ### Attribute Discovery
 
@@ -52,6 +52,75 @@ The package provides 7 main functions organized into three categories:
 - `countRegionQuery()` - Count SNPs by chromosome
 - `countRsidsQuery()` - Count SNPs by RSID list
 - `countGeneQuery()` - Count SNPs by gene
+
+### SNPWay Workflow
+
+- `snpwayGeneMappingsQuery()` - SNPWay mapping workflow (SNP -> gene + PANTHER mappings)
+- `snpwayOverrepresentationWorkflowQuery()` - Full SNPWay workflow (compact backend payload plus locally derived significant and CSV-ready outputs)
+
+## SNPWay Workflow Usage
+
+Visit [SNPWay](https://snpway.annoq.org/) for more details on the workflow and its frontend interface. The Python package provides programmatic access to the same workflows powering the SNPWay web app.
+
+SNPWay functions support these input modes:
+
+- `vcf_text`
+- `chrom_pos_ids` (for `chr:pos` lists)
+- chromosome range (`chromosome_identifier`, `start_position`, `end_position`)
+- `rsid_list`
+
+Exactly one input mode must be provided per call.
+
+Default base URL is `https://enrichment-dev.annoq.org`.
+
+- Override per call with `base_url = ...`
+- Override globally with environment variable `ANNOQ_SNPWAY_BASE_URL`
+
+### Example: Mapping workflow
+
+```R
+library(AnnoQR)
+
+mapping <- snpwayGeneMappingsQuery(
+  rsid_list = c("rs1219648", "rs2912774", "rs2981582")
+)
+
+names(mapping)
+# [1] "gene_list" "rsId_genes_map" "panther_gene_info" "gene_panther_mapping"
+```
+
+### Example: Full overrepresentation workflow
+
+```R
+library(AnnoQR)
+
+workflow <- snpwayOverrepresentationWorkflowQuery(
+  rsid_list = c("rs1219648", "rs2912774", "rs2981582"),
+  annot_data_set = "GO:0008150",
+  correction = "FDR",
+  enrichment_test_type = "FISHER"
+)
+
+length(workflow$overrepresentation_results)
+length(workflow$overrepresentation_significant_results)
+length(workflow$csv_all_mappings)
+```
+
+### Example: VCF text input
+
+```R
+library(AnnoQR)
+
+vcf_text <- paste(
+  "##fileformat=VCFv4.2",
+  "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO",
+  "1\t115921355\t.\tA\tG\t.\t.\t.",
+  "1\t12046063\t.\tC\tT\t.\t.\t.",
+  sep = "\n"
+)
+
+mapping <- snpwayGeneMappingsQuery(vcf_text = vcf_text)
+```
 
 ---
 

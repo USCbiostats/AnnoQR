@@ -1,7 +1,7 @@
 Package: AnnoQR
 Type: Package
 Title: AnnoQR 
-Version: 0.3.0
+Version: 0.4.0
 Author: Bryan Queme
 Maintainer: Bryan Queme <queme@usc.edu>
 Description: Functions to query the AnnoQ Rest API
