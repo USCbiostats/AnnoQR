@@ -42,8 +42,19 @@ snpwayOverrepresentationWorkflowQuery(
 \item{timeout_seconds}{HTTP timeout in seconds.}
 }
 \value{
-A list with all overrepresentation results, significant results,
-and CSV-ready mapping rows.
+A nested list with mapping/panther metadata plus derived results:
+  - mapping$gene_list: List of unique genes found in the input SNPs.
+  - mapping$variant_gene_map: Mapping from SNP ID (rsID or chr:pos) to associated genes.
+  - panther$gene_info: PANTHER annotations (families, pathways, GO terms) for each gene.
+  - panther$gene_to_panther_map: Mapping from gene symbol to PANTHER protein family ID.
+  - overrepresentation$results: All enrichment analysis results from PANTHER.
+  - overrepresentation$significant_results: Only results meeting the significance threshold (FDR or p-value).
+  - overrepresentation$settings: Analysis parameters (annotation dataset, correction method, test type).
+  - overrepresentation$significance_cutoff: The p-value/FDR threshold used to filter significant results.
+  - csv$all_mappings: Table of all SNP-gene-PANTHER associations with selected columns.
+  - csv$all_mappings_all_columns: Table of all SNP-gene-PANTHER associations with complete annotations.
+  - csv$significant_mappings: Table of significant enrichment results with selected columns.
+  - csv$significant_mappings_all_columns: Table of significant enrichment results with complete annotations.
 }
 \description{
 This function calls the SNPWay backend endpoint that runs mapping,

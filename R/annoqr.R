@@ -769,6 +769,19 @@ countGeneQuery <- function(gene, filter_fields = NULL) {
   parsed
 }
 
+.build_snpway_mapping_response <- function(response_data) {
+  list(
+    mapping = list(
+      gene_list = if (!is.null(response_data$gene_list)) response_data$gene_list else list(),
+      variant_gene_map = if (!is.null(response_data$rsId_genes_map)) response_data$rsId_genes_map else list()
+    ),
+    panther = list(
+      gene_info = if (!is.null(response_data$panther_gene_info)) response_data$panther_gene_info else list(),
+      gene_to_panther_map = if (!is.null(response_data$gene_panther_mapping)) response_data$gene_panther_mapping else list()
+    )
+  )
+}
+
 .get_relevant_columns <- function(annotation_dataset = NULL) {
   base_columns <- c("rsId", "PANTHER_ID", "mappedGenes")
 
@@ -1000,7 +1013,11 @@ countGeneQuery <- function(gene, filter_fields = NULL) {
 #' @param base_url Optional SNPWay base URL override.
 #' @param timeout_seconds HTTP timeout in seconds.
 #'
-#' @return A list containing SNP-to-gene mappings and PANTHER metadata.
+#' @return A nested list with mapping and panther metadata:
+#'   - mapping$gene_list: List of unique genes found in the input SNPs.
+#'   - mapping$variant_gene_map: Mapping from SNP ID (rsID or chr:pos) to associated genes.
+#'   - panther$gene_info: PANTHER annotations (families, pathways, GO terms) for each gene.
+#'   - panther$gene_to_panther_map: Mapping from gene symbol to PANTHER protein family ID.
 #'
 #' @export
 snpwayGeneMappingsQuery <- function(vcf_text = NULL,
@@ -1020,12 +1037,14 @@ snpwayGeneMappingsQuery <- function(vcf_text = NULL,
     rsid_list = rsid_list
   )
 
-  .post_snpway_request(
+  response_data <- .post_snpway_request(
     endpoint = "/workflow/gene_mappings",
     payload = payload,
     base_url = base_url,
     timeout_seconds = timeout_seconds
   )
+
+  .build_snpway_mapping_response(response_data)
 }
 
 
@@ -1046,8 +1065,19 @@ snpwayGeneMappingsQuery <- function(vcf_text = NULL,
 #' @param base_url Optional SNPWay base URL override.
 #' @param timeout_seconds HTTP timeout in seconds.
 #'
-#' @return A list with all overrepresentation results, significant results,
-#' and CSV-ready mapping rows.
+#' @return A nested list with mapping/panther metadata plus derived results:
+#'   - mapping$gene_list: List of unique genes found in the input SNPs.
+#'   - mapping$variant_gene_map: Mapping from SNP ID (rsID or chr:pos) to associated genes.
+#'   - panther$gene_info: PANTHER annotations (families, pathways, GO terms) for each gene.
+#'   - panther$gene_to_panther_map: Mapping from gene symbol to PANTHER protein family ID.
+#'   - overrepresentation$results: All enrichment analysis results from PANTHER.
+#'   - overrepresentation$significant_results: Only results meeting the significance threshold (FDR or p-value).
+#'   - overrepresentation$settings: Analysis parameters (annotation dataset, correction method, test type).
+#'   - overrepresentation$significance_cutoff: The p-value/FDR threshold used to filter significant results.
+#'   - csv$all_mappings: Table of all SNP-gene-PANTHER associations with selected columns.
+#'   - csv$all_mappings_all_columns: Table of all SNP-gene-PANTHER associations with complete annotations.
+#'   - csv$significant_mappings: Table of significant enrichment results with selected columns.
+#'   - csv$significant_mappings_all_columns: Table of significant enrichment results with complete annotations.
 #'
 #' @export
 snpwayOverrepresentationWorkflowQuery <- function(annot_data_set = "GO:0008150",
@@ -1093,26 +1123,44 @@ snpwayOverrepresentationWorkflowQuery <- function(annot_data_set = "GO:0008150",
     significant_genes
   )
 
-  response_data$overrepresentation_all_results <- overrepresentation_results
-  response_data$overrepresentation_significant_results <- significant_results
-  response_data$csv_all_mappings <- .create_results_table_data(
-    response_data,
-    annotation_dataset = annot_data_set
-  )
-  response_data$csv_all_mappings_all_columns <- .create_results_table_data(
-    response_data,
-    annotation_dataset = NULL
-  )
-  response_data$csv_significant_mappings <- .create_results_table_data(
-    response_data,
-    panther_ids_to_include = significant_panther_ids,
-    annotation_dataset = annot_data_set
-  )
-  response_data$csv_significant_mappings_all_columns <- .create_results_table_data(
-    response_data,
-    panther_ids_to_include = significant_panther_ids,
-    annotation_dataset = NULL
-  )
+  significance_field <- if (tolower(as.character(correction)) == "fdr") "fdr" else "pValue"
 
-  response_data
+  c(
+    .build_snpway_mapping_response(response_data),
+    list(
+      overrepresentation = list(
+        results = overrepresentation_results,
+        significant_results = significant_results,
+        settings = list(
+          annot_data_set = annot_data_set,
+          correction = correction,
+          enrichment_test_type = enrichment_test_type
+        ),
+        significance_cutoff = list(
+          field = significance_field,
+          p_value = 0.05
+        )
+      ),
+      csv = list(
+        all_mappings = .create_results_table_data(
+          response_data,
+          annotation_dataset = annot_data_set
+        ),
+        all_mappings_all_columns = .create_results_table_data(
+          response_data,
+          annotation_dataset = NULL
+        ),
+        significant_mappings = .create_results_table_data(
+          response_data,
+          panther_ids_to_include = significant_panther_ids,
+          annotation_dataset = annot_data_set
+        ),
+        significant_mappings_all_columns = .create_results_table_data(
+          response_data,
+          panther_ids_to_include = significant_panther_ids,
+          annotation_dataset = NULL
+        )
+      )
+    )
+  )
 }

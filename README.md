@@ -76,6 +76,30 @@ Default base URL is `https://enrichment-dev.annoq.org`.
 - Override per call with `base_url = ...`
 - Override globally with environment variable `ANNOQ_SNPWAY_BASE_URL`
 
+### SNPWay response structure
+
+Both SNPWay functions return a nested response:
+
+- `mapping`: SNP-to-gene mapping results
+  - `gene_list`: List of unique genes found in the input SNPs
+  - `variant_gene_map`: Map of rsID or chr:pos to associated genes
+- `panther`: Gene annotation and PANTHER family cross-references
+  - `gene_info`: PANTHER gene metadata (families, pathways, GO terms) keyed by PANTHER ID
+  - `gene_to_panther_map`: Gene symbol to PANTHER ID(s)
+
+The overrepresentation workflow adds:
+
+- `overrepresentation`: Functional enrichment analysis results
+  - `results`: All normalized enrichment terms from PANTHER
+  - `significant_results`: Filtered by correction method (FDR, p-value, etc.)
+  - `settings`: Analysis parameters (annotation dataset, correction method, test type)
+  - `significance_cutoff`: The p-value/FDR field and threshold used for filtering
+- `csv`: Data export tables
+  - `all_mappings`: All SNP-gene-PANTHER associations with selected columns
+  - `all_mappings_all_columns`: All SNP-gene-PANTHER associations with complete annotations
+  - `significant_mappings`: Significant enrichment results with selected columns
+  - `significant_mappings_all_columns`: Significant enrichment results with all annotations
+
 ### Example: Mapping workflow
 
 ```R
@@ -86,7 +110,13 @@ mapping <- snpwayGeneMappingsQuery(
 )
 
 names(mapping)
-# [1] "gene_list" "rsId_genes_map" "panther_gene_info" "gene_panther_mapping"
+# [1] "mapping" "panther"
+
+names(mapping$mapping)
+# [1] "gene_list" "variant_gene_map"
+
+names(mapping$panther)
+# [1] "gene_info" "gene_to_panther_map"
 ```
 
 ### Example: Full overrepresentation workflow
@@ -101,9 +131,12 @@ workflow <- snpwayOverrepresentationWorkflowQuery(
   enrichment_test_type = "FISHER"
 )
 
-length(workflow$overrepresentation_results)
-length(workflow$overrepresentation_significant_results)
-length(workflow$csv_all_mappings)
+length(workflow$overrepresentation$results)
+length(workflow$overrepresentation$significant_results)
+length(workflow$csv$all_mappings)
+
+workflow$overrepresentation$settings
+workflow$overrepresentation$significance_cutoff
 ```
 
 ### Example: VCF text input

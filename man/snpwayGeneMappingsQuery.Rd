@@ -33,7 +33,11 @@ snpwayGeneMappingsQuery(
 \item{timeout_seconds}{HTTP timeout in seconds.}
 }
 \value{
-A list containing SNP-to-gene mappings and PANTHER metadata.
+A nested list with mapping and panther metadata:
+  - mapping$gene_list: List of unique genes found in the input SNPs.
+  - mapping$variant_gene_map: Mapping from SNP ID (rsID or chr:pos) to associated genes.
+  - panther$gene_info: PANTHER annotations (families, pathways, GO terms) for each gene.
+  - panther$gene_to_panther_map: Mapping from gene symbol to PANTHER protein family ID.
 }
 \description{
 This function calls the SNPWay backend endpoint that maps SNP input to genes
