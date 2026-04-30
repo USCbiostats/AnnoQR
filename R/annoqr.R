@@ -13,7 +13,7 @@ if (!requireNamespace("jsonlite", quietly = TRUE)) {
 
 # Base URL for the Annoq API
 BASE_URL <- "https://api-v2.annoq.org"
-SNPWAY_BASE_URL_DEFAULT <- "https://enrichment-dev.annoq.org"
+SNPWAY_BASE_URL_DEFAULT <- "http://snpway.annoq.org"
 
 
 # Process the fields parameter to handle the three possible input types:
