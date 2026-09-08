@@ -4,12 +4,15 @@
 \alias{countGeneQuery}
 \title{Count the number of SNPs defined in the system that have been associated for the specified gene product.}
 \usage{
-countGeneQuery(gene, filter_fields = NULL)
+countGeneQuery(gene, filter_fields = NULL, search_hrc = FALSE)
 }
 \arguments{
 \item{gene}{Gene product to search (gene id, gene symbol or UniProt id)}
 
 \item{filter_fields}{SNP attribute labels that should not be empty for the record to be retrieved}
+
+\item{search_hrc}{Restrict results to variants mapped to the HRC r1.1 panel,
+in hg19 coordinates. Defaults to \code{FALSE}.}
 }
 \value{
 The count of SNPs matching the criteria.

@@ -11,9 +11,54 @@ if (!requireNamespace("jsonlite", quietly = TRUE)) {
   stop("Package 'jsonlite' is required but not installed.")
 }
 
-# Base URL for the Annoq API
-BASE_URL <- "https://api-v2.annoq.org"
+# Base URL for the Annoq API (configurable via the ANNOQR_BASE_URL env var).
+#
+# Overridable so the package can be pointed at a non-production api-v2 instance --
+# notably api-v2-dev.topmed.annoq.org, the only instance carrying the search_hrc
+# argument until the TOPMed cutover. The default is unchanged.
+BASE_URL <- Sys.getenv("ANNOQR_BASE_URL", "https://api-v2.annoq.org")
+
+# SNPWay is a separate service, not api-v2, and does not take search_hrc.
 SNPWAY_BASE_URL_DEFAULT <- "http://snpway.annoq.org"
+
+
+#' Get or set the AnnoQ API base URL
+#'
+#' @param url Optional new base URL string. If \code{NULL} (the default),
+#'   returns the current URL. If provided, sets the URL for the current session.
+#' @return The current (or newly set) base URL, invisibly when setting.
+#' @details
+#' The base URL is resolved in this order:
+#' \enumerate{
+#'   \item Value set via \code{annoq_api_url(url)} in the current session
+#'   \item The \code{ANNOQR_BASE_URL} environment variable
+#'   \item The default: \code{"https://api-v2.annoq.org"}
+#' }
+#'
+#' To set the environment variable persistently, add a line to your
+#' \code{.Renviron} file (e.g. via \code{usethis::edit_r_environ()}):
+#' \preformatted{ANNOQR_BASE_URL=https://api-v2-dev.topmed.annoq.org}
+#'
+#' @examples
+#' # Check current URL
+#' annoq_api_url()
+#'
+#' # Temporarily point at the TOPMed development instance, the only one
+#' # currently serving the search_hrc option
+#' annoq_api_url("https://api-v2-dev.topmed.annoq.org")
+#'
+#' # Reset to environment/default
+#' annoq_api_url(Sys.getenv("ANNOQR_BASE_URL", "https://api-v2.annoq.org"))
+#'
+#' @importFrom utils assignInMyNamespace
+#' @export
+annoq_api_url <- function(url = NULL) {
+  if (!is.null(url)) {
+    assignInMyNamespace("BASE_URL", url)
+    return(invisible(url))
+  }
+  BASE_URL
+}
 
 
 # Process the fields parameter to handle the three possible input types:
@@ -55,6 +100,25 @@ SNPWAY_BASE_URL_DEFAULT <- "http://snpway.annoq.org"
     stop(paste("Fields parameter must be a character string (JSON or file path), vector of attributes, or NULL. Got:", class(fields)))
   }
 }
+# Add api-v2's search_hrc flag to a request when it is set (annoq-site#78).
+#
+# Omitted rather than sent as "false": api-v2 already defaults it off, so
+# omitting keeps every existing call byte-identical on the wire.
+#
+# When set, results are restricted to variants mapped to the HRC r1.1 panel
+# (Mapped_in_HRC=Y) and the coordinate basis becomes hg19 -- chromosome
+# positions are matched against pos_hg19 and gene regions resolve to hg19. The
+# response shape is unchanged, so request the hg19 columns explicitly via
+# `fields` to see them.
+#
+# Returns the modified list: R lists are copied, not mutated in place.
+.apply_search_hrc <- function(params, search_hrc) {
+  if (isTRUE(search_hrc)) {
+    params[["search_hrc"]] <- "true"
+  }
+  params
+}
+
 
 
 #' Helper function to download all SNPs using the download API endpoint.
@@ -122,6 +186,8 @@ snpAttributesQuery <- function() {
 #' @param pagination_from Pagination start index (default: 0)
 #' @param pagination_size Pagination page size (default: 1000)
 #' @param fetch_all If TRUE, retrieves all matching SNPs by downloading all pages (default: FALSE)
+#' @param search_hrc Restrict results to variants mapped to the HRC r1.1 panel,
+#'   in hg19 coordinates. Defaults to \code{FALSE}.
 #'
 #' @return A list containing the SNP information.
 #'
@@ -168,7 +234,8 @@ regionQuery <- function(chromosome_identifier,
                         filter_fields = NULL,
                         pagination_from = 0,
                         pagination_size = 1000,
-                        fetch_all = FALSE) {
+                        fetch_all = FALSE,
+                        search_hrc = FALSE) {
   params <- list("chromosome_identifier" = chromosome_identifier)
 
   if (!is.null(start_position)) {
@@ -186,6 +253,8 @@ regionQuery <- function(chromosome_identifier,
   if (!is.null(filter_fields)) {
     params[["filter_fields"]] <- paste(filter_fields, collapse = ",")
   }
+
+  params <- .apply_search_hrc(params, search_hrc)
 
   if (fetch_all) {
     # Use the download api to fetch all results
@@ -227,6 +296,8 @@ regionQuery <- function(chromosome_identifier,
 #' @param pagination_from Pagination start index (default: 0)
 #' @param pagination_size Pagination page size (default: 1000)
 #' @param fetch_all If TRUE, retrieves all matching SNPs by downloading all pages (default: FALSE)
+#' @param search_hrc Restrict results to variants mapped to the HRC r1.1 panel,
+#'   in hg19 coordinates. Defaults to \code{FALSE}.
 #'
 #' @return A list containing the SNP information.
 #'
@@ -263,7 +334,8 @@ rsidsQuery <- function(rsid_list,
                        filter_fields = NULL,
                        pagination_from = 0,
                        pagination_size = 1000,
-                       fetch_all = FALSE) {
+                       fetch_all = FALSE,
+                       search_hrc = FALSE) {
   params <- list()
 
   if (!is.null(rsid_list)) {
@@ -282,6 +354,8 @@ rsidsQuery <- function(rsid_list,
   if (!is.null(filter_fields)) {
     params[["filter_fields"]] <- paste(filter_fields, collapse = ",")
   }
+
+  params <- .apply_search_hrc(params, search_hrc)
 
   if (fetch_all) {
     # Use the download api to fetch all results
@@ -323,6 +397,8 @@ rsidsQuery <- function(rsid_list,
 #' @param pagination_from Pagination start index (default: 0)
 #' @param pagination_size Pagination page size (default: 1000)
 #' @param fetch_all If TRUE, retrieves all matching SNPs by downloading all pages (default: FALSE)
+#' @param search_hrc Restrict results to variants mapped to the HRC r1.1 panel,
+#'   in hg19 coordinates. Defaults to \code{FALSE}.
 #'
 #' @return A list containing the SNP information.
 #'
@@ -356,7 +432,8 @@ geneQuery <- function(gene,
                       filter_fields = NULL,
                       pagination_from = 0,
                       pagination_size = 1000,
-                      fetch_all = FALSE) {
+                      fetch_all = FALSE,
+                      search_hrc = FALSE) {
   params <- list()
 
   if (!is.null(gene)) {
@@ -371,6 +448,8 @@ geneQuery <- function(gene,
   if (!is.null(filter_fields)) {
     params[["filter_fields"]] <- paste(filter_fields, collapse = ",")
   }
+
+  params <- .apply_search_hrc(params, search_hrc)
 
   if (fetch_all) {
     # Use the download api to fetch all results
@@ -410,6 +489,8 @@ geneQuery <- function(gene,
 #' @param start_position Start position region of search (default: 1)
 #' @param end_position End position region of search (default: 100000)
 #' @param filter_fields SNP attribute labels that should not be empty for the record to be retrieved
+#' @param search_hrc Restrict results to variants mapped to the HRC r1.1 panel,
+#'   in hg19 coordinates. Defaults to \code{FALSE}.
 #'
 #' @return The count of SNPs matching the criteria.
 #'
@@ -435,7 +516,8 @@ geneQuery <- function(gene,
 countRegionQuery <- function(chromosome_identifier,
                              start_position = 1,
                              end_position = 100000,
-                             filter_fields = NULL) {
+                             filter_fields = NULL,
+                             search_hrc = FALSE) {
   url <- paste0(BASE_URL, "/count/chr")
 
   params <- list("chromosome_identifier" = chromosome_identifier)
@@ -450,6 +532,8 @@ countRegionQuery <- function(chromosome_identifier,
   if (!is.null(filter_fields)) {
     params[["filter_fields"]] <- paste(filter_fields, collapse = ",")
   }
+
+  params <- .apply_search_hrc(params, search_hrc)
 
   response <- httr::GET(url, query = params)
   httr::stop_for_status(response)
@@ -468,6 +552,8 @@ countRegionQuery <- function(chromosome_identifier,
 #'
 #' @param rsid_list List of RSIDs to search, can be comma-separated string or vector of strings
 #' @param filter_fields SNP attribute labels that should not be empty for the record to be retrieved
+#' @param search_hrc Restrict results to variants mapped to the HRC r1.1 panel,
+#'   in hg19 coordinates. Defaults to \code{FALSE}.
 #'
 #' @return The count of SNPs matching the criteria.
 #'
@@ -485,7 +571,8 @@ countRegionQuery <- function(chromosome_identifier,
 #'
 #' @export
 countRsidsQuery <- function(rsid_list,
-                            filter_fields = NULL) {
+                            filter_fields = NULL,
+                            search_hrc = FALSE) {
   url <- paste0(BASE_URL, "/count/rsidList")
 
   params <- list()
@@ -501,6 +588,8 @@ countRsidsQuery <- function(rsid_list,
   if (!is.null(filter_fields)) {
     params[["filter_fields"]] <- paste(filter_fields, collapse = ",")
   }
+
+  params <- .apply_search_hrc(params, search_hrc)
 
   response <- httr::GET(url, query = params)
   httr::stop_for_status(response)
@@ -519,6 +608,8 @@ countRsidsQuery <- function(rsid_list,
 #'
 #' @param gene Gene product to search (gene id, gene symbol or UniProt id)
 #' @param filter_fields SNP attribute labels that should not be empty for the record to be retrieved
+#' @param search_hrc Restrict results to variants mapped to the HRC r1.1 panel,
+#'   in hg19 coordinates. Defaults to \code{FALSE}.
 #'
 #' @return The count of SNPs matching the criteria.
 #'
@@ -535,7 +626,7 @@ countRsidsQuery <- function(rsid_list,
 #' print(paste("Number of SNPs:", count))
 #'
 #' @export
-countGeneQuery <- function(gene, filter_fields = NULL) {
+countGeneQuery <- function(gene, filter_fields = NULL, search_hrc = FALSE) {
   url <- paste0(BASE_URL, "/count/gene_product")
 
   params <- list()
@@ -547,6 +638,8 @@ countGeneQuery <- function(gene, filter_fields = NULL) {
   if (!is.null(filter_fields)) {
     params[["filter_fields"]] <- paste(filter_fields, collapse = ",")
   }
+
+  params <- .apply_search_hrc(params, search_hrc)
 
   response <- httr::GET(url, query = params)
   httr::stop_for_status(response)

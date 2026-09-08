@@ -8,7 +8,8 @@ countRegionQuery(
   chromosome_identifier,
   start_position = 1,
   end_position = 1e+05,
-  filter_fields = NULL
+  filter_fields = NULL,
+  search_hrc = FALSE
 )
 }
 \arguments{
@@ -19,6 +20,9 @@ countRegionQuery(
 \item{end_position}{End position region of search (default: 100000)}
 
 \item{filter_fields}{SNP attribute labels that should not be empty for the record to be retrieved}
+
+\item{search_hrc}{Restrict results to variants mapped to the HRC r1.1 panel,
+in hg19 coordinates. Defaults to \code{FALSE}.}
 }
 \value{
 The count of SNPs matching the criteria.

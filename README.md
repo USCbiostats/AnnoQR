@@ -29,7 +29,7 @@ snps <- regionQuery(
   chromosome_identifier = "1",
   start_position = 1,
   end_position = 100000,
-  fields = c("chr", "pos", "ref", "alt", "rs_dbSNP151")
+  fields = c("chr", "pos", "ref", "alt", "rs_dbSNP")
 )
 ```
 
@@ -57,6 +57,43 @@ The package provides 9 main functions organized into four categories:
 
 - `snpwayGeneMappingsQuery()` - SNPWay mapping workflow (SNP -> gene + PANTHER mappings)
 - `snpwayOverrepresentationWorkflowQuery()` - Full SNPWay workflow (compact backend payload plus locally derived significant and CSV-ready outputs)
+
+## Restricting a search to the HRC subset
+
+`regionQuery()`, `rsidsQuery()`, `geneQuery()` and the three `count*Query()` functions accept an
+optional `search_hrc` argument. When `TRUE`, results are restricted to variants mapped to the
+Haplotype Reference Consortium r1.1 panel (`Mapped_in_HRC=Y`), and **the coordinate basis becomes
+hg19** — `start_position`/`end_position` are matched against `pos_hg19`, and gene regions resolve
+to hg19.
+
+```r
+snps <- regionQuery(
+  chromosome_identifier = "18",
+  start_position = 10000,
+  end_position = 20000,
+  search_hrc = TRUE,
+  fields = c("chr", "pos", "Mapped_in_HRC", "chr_hg19", "pos_hg19")
+)
+```
+
+The response shape does not change — the flag only changes which variants match. To *see* the hg19
+values, request them explicitly in `fields`: `Mapped_in_HRC`, `HRC_chr_pos`, `HRC_chr_pos_ref_alt`,
+`chr_hg19`, `pos_hg19`, `ref_hg19`, `alt_hg19`.
+
+Not accepted by `snpAttributesQuery()` (the annotation tree is a property of the index, not of a
+result set), nor by the SNPWay workflow functions, which call the SNPWay service rather than
+api-v2 — HRC support there is tracked in
+[Annoq_Overrepr_Workflow#9](https://github.com/USCbiostats/Annoq_Overrepr_Workflow/issues/9).
+
+### Pointing the package at another api-v2 instance
+
+The base URL defaults to `https://api-v2.annoq.org`. Override it with the `ANNOQR_BASE_URL`
+environment variable, or for the current session with `annoq_api_url()`. Until the TOPMed cutover,
+`search_hrc` is only available on the development instance:
+
+```r
+annoq_api_url("https://api-v2-dev.topmed.annoq.org")
+```
 
 ## SNPWay Workflow Usage
 
@@ -187,7 +224,7 @@ snps <- regionQuery(
   chromosome_identifier = "1",
   start_position = 1,
   end_position = 100000,
-  fields = c("chr", "pos", "ref", "alt", "rs_dbSNP151")
+  fields = c("chr", "pos", "ref", "alt", "rs_dbSNP")
 )
 
 # Query the X chromosome from position 1,000 to 50,000 and get default fields
@@ -209,7 +246,7 @@ snps <- regionQuery(
   chromosome_identifier = "1",
   start_position = 1,
   end_position = 10000,
-  fields = c("chr", "pos", "ref", "alt", "rs_dbSNP151")
+  fields = c("chr", "pos", "ref", "alt", "rs_dbSNP")
 )
 ```
 
@@ -220,7 +257,7 @@ snps <- regionQuery(
   chromosome_identifier = "1",
   start_position = 1,
   end_position = 10000,
-  fields = '{"_source":["chr", "pos", "ref", "alt", "rs_dbSNP151"]}'
+  fields = '{"_source":["chr", "pos", "ref", "alt", "rs_dbSNP"]}'
 )
 ```
 
@@ -228,7 +265,7 @@ snps <- regionQuery(
 
 ```R
 # Export the config file: config.txt from AnnoQ
-# {"_source":["chr", "pos", "ref", "alt", "rs_dbSNP151"]}
+# {"_source":["chr", "pos", "ref", "alt", "rs_dbSNP"]}
 
 snps <- regionQuery(
   chromosome_identifier = "1",
@@ -320,7 +357,7 @@ snps <- rsidsQuery(
 ```R
 snps <- rsidsQuery(
   rsid_list = c("rs1219648", "rs2912774", "rs2981582"),
-  fields = c("chr", "pos", "ref", "alt", "rs_dbSNP151")
+  fields = c("chr", "pos", "ref", "alt", "rs_dbSNP")
 )
 ```
 
@@ -364,7 +401,7 @@ snps <- geneQuery(gene = "ENSG00000012048")
 ```R
 snps <- geneQuery(
   gene = "TP53",
-  fields = c("chr", "pos", "ref", "alt", "rs_dbSNP151"),
+  fields = c("chr", "pos", "ref", "alt", "rs_dbSNP"),
   filter_fields = c("ANNOVAR_ucsc_Transcript_ID")
 )
 ```
@@ -472,7 +509,7 @@ snps <- regionQuery(
   start_position = 1,
   end_position = 1000000,
   filter_fields = c("VEP_ensembl_Gene_ID"),
-  fields = c("chr", "pos", "ref", "alt", "rs_dbSNP151", "VEP_ensembl_Gene_ID")
+  fields = c("chr", "pos", "ref", "alt", "rs_dbSNP", "VEP_ensembl_Gene_ID")
 )
 ```
 
@@ -520,7 +557,7 @@ for (gene in genes) {
   
   all_gene_snps[[gene]] <- geneQuery(
     gene = gene,
-    fields = c("chr", "pos", "ref", "alt", "rs_dbSNP151"),
+    fields = c("chr", "pos", "ref", "alt", "rs_dbSNP"),
     fetch_all = TRUE
   )
 }
@@ -540,7 +577,7 @@ cat(sprintf("%d out of %d RSIDs found\n", count, length(rsids)))
 # Retrieve all matching SNPs
 snps <- rsidsQuery(
   rsid_list = rsids,
-  fields = c("chr", "pos", "ref", "alt", "rs_dbSNP151"),
+  fields = c("chr", "pos", "ref", "alt", "rs_dbSNP"),
   fetch_all = TRUE
 )
 ```

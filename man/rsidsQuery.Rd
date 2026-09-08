@@ -10,7 +10,8 @@ rsidsQuery(
   filter_fields = NULL,
   pagination_from = 0,
   pagination_size = 1000,
-  fetch_all = FALSE
+  fetch_all = FALSE,
+  search_hrc = FALSE
 )
 }
 \arguments{
@@ -25,6 +26,9 @@ rsidsQuery(
 \item{pagination_size}{Pagination page size (default: 1000)}
 
 \item{fetch_all}{If TRUE, retrieves all matching SNPs by downloading all pages (default: FALSE)}
+
+\item{search_hrc}{Restrict results to variants mapped to the HRC r1.1 panel,
+in hg19 coordinates. Defaults to \code{FALSE}.}
 }
 \value{
 A list containing the SNP information.

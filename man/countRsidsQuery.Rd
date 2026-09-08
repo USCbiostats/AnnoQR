@@ -4,12 +4,15 @@
 \alias{countRsidsQuery}
 \title{Count the number of SNPs defined in the system that have matching RSIDs from the specified list.}
 \usage{
-countRsidsQuery(rsid_list, filter_fields = NULL)
+countRsidsQuery(rsid_list, filter_fields = NULL, search_hrc = FALSE)
 }
 \arguments{
 \item{rsid_list}{List of RSIDs to search, can be comma-separated string or vector of strings}
 
 \item{filter_fields}{SNP attribute labels that should not be empty for the record to be retrieved}
+
+\item{search_hrc}{Restrict results to variants mapped to the HRC r1.1 panel,
+in hg19 coordinates. Defaults to \code{FALSE}.}
 }
 \value{
 The count of SNPs matching the criteria.
