@@ -62,9 +62,9 @@ annoq_api_url <- function(url = NULL) {
 
 
 # Process the fields parameter to handle the three possible input types:
-# 1. JSON string: {"_source":["Basic Info","chr","pos","ref","alt","rs_dbSNP151"]}
+# 1. JSON string: {"_source":["Basic Info","chr","pos","ref","alt","rs_dbSNP"]}
 # 2. File path: path to a file containing the JSON config
-# 3. List of attributes: ["Basic Info", "chr", "pos", "ref", "alt", "rs_dbSNP151"]
+# 3. List of attributes: ["Basic Info", "chr", "pos", "ref", "alt", "rs_dbSNP"]
 #
 # Returns the JSON string representation or NULL if fields is NULL.
 .process_fields_param <- function(fields) {
