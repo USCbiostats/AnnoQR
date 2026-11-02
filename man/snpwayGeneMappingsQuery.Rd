@@ -48,6 +48,11 @@ This function calls the SNPWay backend endpoint that maps SNP input to genes
 and returns PANTHER mapping metadata.
 }
 \details{
+SNPWay is intended for predefined variant lists (lead SNPs, curated panels,
+credible sets) on GRCh37/hg19. For GWAS-derived inputs, provide LD-pruned or
+otherwise independent variants; correlated variants can give individual loci
+disproportionate weight in the enrichment test.
+
 Provide exactly one input mode:
 - `vcf_text`
 - `chrom_pos_ids`

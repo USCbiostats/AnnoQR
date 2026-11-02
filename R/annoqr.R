@@ -1040,6 +1040,11 @@ countGeneQuery <- function(gene, filter_fields = NULL) {
 #' This function calls the SNPWay backend endpoint that maps SNP input to genes
 #' and returns PANTHER mapping metadata.
 #'
+#' SNPWay is intended for predefined variant lists (lead SNPs, curated panels,
+#' credible sets) on GRCh37/hg19. For GWAS-derived inputs, provide LD-pruned or
+#' otherwise independent variants; correlated variants can give individual loci
+#' disproportionate weight in the enrichment test.
+#'
 #' Provide exactly one input mode:
 #' - `vcf_text`
 #' - `chrom_pos_ids`
@@ -1101,6 +1106,11 @@ snpwayGeneMappingsQuery <- function(vcf_text = NULL,
 #'
 #' This function calls the SNPWay backend endpoint that runs mapping,
 #' overrepresentation, and CSV-ready download row generation.
+#'
+#' SNPWay is intended for predefined variant lists (lead SNPs, curated panels,
+#' credible sets) on GRCh37/hg19. For GWAS-derived inputs, provide LD-pruned or
+#' otherwise independent variants; correlated variants can give individual loci
+#' disproportionate weight in the enrichment test.
 #'
 #' @param annot_data_set Annotation dataset ID (default: GO:0008150).
 #' @param correction Multiple-testing correction (`FDR`, `BONFERRONI`, `NONE`).
