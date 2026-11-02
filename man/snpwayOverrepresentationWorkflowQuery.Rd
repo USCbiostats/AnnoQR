@@ -55,8 +55,20 @@ A nested list with mapping/panther metadata plus derived results:
   - csv$all_mappings_all_columns: Table of all SNP-gene-PANTHER associations with complete annotations.
   - csv$significant_mappings: Table of significant enrichment results with selected columns.
   - csv$significant_mappings_all_columns: Table of significant enrichment results with complete annotations.
+  - input_report$summary: Counts of submitted variants by status and of gene identifiers
+    mapped / not mapped / not listed by PANTHER.
+  - input_report$variants: Data frame with one row per submitted variant
+    (`input`, `variant_key`, `status` of annotated / no_record / no_gene, `n_genes`).
+  - input_report$gene_identifiers: Data frame with one row per gene identifier sent to PANTHER
+    (`identifier`, `mapped_by_panther` of yes / no / not_listed, `panther_listed_as`, `panther_match`).
 }
 \description{
 This function calls the SNPWay backend endpoint that runs mapping,
 overrepresentation, and CSV-ready download row generation.
+}
+\details{
+SNPWay is intended for predefined variant lists (lead SNPs, curated panels,
+credible sets) on GRCh37/hg19. For GWAS-derived inputs, provide LD-pruned or
+otherwise independent variants; correlated variants can give individual loci
+disproportionate weight in the enrichment test.
 }

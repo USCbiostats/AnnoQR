@@ -38,12 +38,21 @@ A nested list with mapping and panther metadata:
   - mapping$variant_gene_map: Mapping from SNP ID (rsID or chr:pos) to associated genes.
   - panther$gene_info: PANTHER annotations (families, pathways, GO terms) for each gene.
   - panther$gene_to_panther_map: Mapping from gene symbol to PANTHER protein family ID.
+  - input_report$summary: Counts of submitted variants by status and of gene identifiers.
+  - input_report$variants: Data frame with one row per submitted variant
+    (`input`, `variant_key`, `status` of annotated / no_record / no_gene, `n_genes`).
+  - input_report$gene_identifiers: NULL here, since no overrepresentation test is run.
 }
 \description{
 This function calls the SNPWay backend endpoint that maps SNP input to genes
 and returns PANTHER mapping metadata.
 }
 \details{
+SNPWay is intended for predefined variant lists (lead SNPs, curated panels,
+credible sets) on GRCh37/hg19. For GWAS-derived inputs, provide LD-pruned or
+otherwise independent variants; correlated variants can give individual loci
+disproportionate weight in the enrichment test.
+
 Provide exactly one input mode:
 - `vcf_text`
 - `chrom_pos_ids`

@@ -8,6 +8,9 @@ Description: Functions to query the AnnoQ Rest API
 Imports:
     httr,
     jsonlite
+Suggests:
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
